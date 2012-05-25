@@ -7,6 +7,8 @@
 int foo = 0;
 
 /* Local Function Prototypes */
+void display(workspace_t *w);
+int8_t process_input_blocking(workspace_t *w);
 void run(workspace_t *w);
 op_t pick_op(void);
 element_t pick_element(void);
@@ -28,6 +30,15 @@ void end_io(void) {
 	endwin();
 }
 
+void edit_workspace_loop(workspace_t *w) {
+	int8_t cmd;
+	do {
+		display(w);
+		cmd = process_input_blocking(w);
+	} while(cmd != -1);
+}
+
+/* Local Functions */
 void display(workspace_t *w) {
 	int x, y, z;
 	atom_t *a;
@@ -99,6 +110,7 @@ void display(workspace_t *w) {
 	refresh();
 }
 
+// TODO document input commands; both in README.md and in a case 'h' or case '?'
 int8_t process_input_blocking(workspace_t *w) {
 	manipulator_t *m, *mindex;
 	glyph_t *g, *gindex;
@@ -132,7 +144,7 @@ int8_t process_input_blocking(workspace_t *w) {
 		break;
 	case 'M':
 		if(m != NULL)
-			remove_manipulator(w, m);
+			remove_manipulator(m);
 		break;
 	case 'b':
 		if((g == NULL) && (m == NULL)) {
@@ -143,7 +155,7 @@ int8_t process_input_blocking(workspace_t *w) {
 		break;
 	case 'B':
 		if(g != NULL)
-			remove_glyph(w, g);
+			remove_glyph(g);
 		break;
 	case 'u':
 		if((g == NULL) && (m == NULL)) {
@@ -154,11 +166,10 @@ int8_t process_input_blocking(workspace_t *w) {
 		break;
 	case 'U':
 		if(g != NULL)
-			remove_glyph(w, g);
+			remove_glyph(g);
 		break;
 	case 'j': //j for jar? or something
 		if((g == NULL) && (m == NULL)) {
-			// TODO select source type
 			add_glyph(w, new_glyph(SOURCE, (uint8_t)pick_element(), w->pos, w->pos));
 		}
 		break;
@@ -234,8 +245,6 @@ int8_t process_input_blocking(workspace_t *w) {
 	case 'i':
 		if(m) {
 			inst_add(m, pick_op());
-			if(m->pc->list.next != &m->inst_list)
-				m->pc = list_entry(m->pc->list.next, inst_t, list);
 		}
 		break;
 	case 'I':
@@ -283,7 +292,6 @@ int8_t process_input_blocking(workspace_t *w) {
 	return 0;
 }
 
-/* Local Functions */
 void run(workspace_t *w) {
 	manipulator_t *mindex;
 	glyph_t *gindex;
@@ -317,7 +325,7 @@ void run(workspace_t *w) {
 op_t pick_op(void) {
 	op_t op = 0;
 	int cmd;
-	int y;
+	op_t y;
 
 	do {
 		mvprintw(1, 4*GRID_SZ_X+10, "Instructions");
@@ -340,7 +348,7 @@ op_t pick_op(void) {
 element_t pick_element(void) {
 	element_t element = 0;
 	int cmd;
-	int y;
+	element_t y;
 
 	do {
 		mvprintw(1, 4*GRID_SZ_X+1, "Elements");

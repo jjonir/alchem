@@ -21,7 +21,7 @@ void add_manipulator(workspace_t *w, manipulator_t *m) {
 	list_add(&m->list, &w->manipulators);
 }
 
-void remove_manipulator(workspace_t *w, manipulator_t *m) {
+void remove_manipulator(manipulator_t *m) {
 	list_del(&m->list);
 	delete_manipulator(m);
 }
@@ -30,7 +30,7 @@ void add_glyph(workspace_t *w, glyph_t *g) {
 	list_add(&g->list, &w->glyphs);
 }
 
-void remove_glyph(workspace_t *w, glyph_t *g) {
+void remove_glyph(glyph_t *g) {
 	list_del(&g->list);
 	delete_glyph(g);
 }

@@ -22,8 +22,8 @@ typedef struct workspace {
 workspace_t *new_workspace(void);
 void add_atom(workspace_t *w, atom_t *a);
 void add_manipulator(workspace_t *w, manipulator_t *m);
-void remove_manipulator(workspace_t *w, manipulator_t *m);
+void remove_manipulator(manipulator_t *m);
 void add_glyph(workspace_t *w, glyph_t *g);
-void remove_glyph(workspace_t *w, glyph_t *g);
+void remove_glyph(glyph_t *g);
 
 #endif

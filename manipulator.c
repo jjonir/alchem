@@ -53,10 +53,10 @@ void inst_add(manipulator_t *m, op_t op) {
 	i->op = op;
 	if(list_empty(&m->inst_list)) {
 		list_add(&i->list, &m->inst_list);
-		m->pc = i;
 	} else {
 		list_add(&i->list, &m->pc->list);
 	}
+	m->pc = i;
 }
 
 void inst_add_prev(manipulator_t *m, op_t op) {
@@ -193,7 +193,9 @@ void retract(manipulator_t *m) {
 		move_compound(m->grabbed_atom, dp);
 }
 
-//TODO prevent two heads grabbing one atom
+// TODO prevent two heads grabbing one atom
+// or, TODO prevent two heads moving a compound in different directions
+// TODO either of these is non-trivial
 void toggle_head(manipulator_t *m, struct list_head *atoms) {
 	if(m->head_state == HEAD_OPEN) {
 		m->head_state = HEAD_CLOSED;
