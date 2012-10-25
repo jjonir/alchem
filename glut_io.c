@@ -7,13 +7,18 @@
 #include "workspace.h"
 
 static workspace_t *w_io;
+static int running = 0;
 
 /* Local Function Prototypes */
 void display(void);
 void reshape(int w, int h);
 void keyboard(unsigned char key, int x, int y);
+void animate(int val);
 
+void draw_grid(void);
 void draw_manipulator(manipulator_t *m);
+void draw_glyph(glyph_t *g);
+void draw_atom(atom_t *a);
 
 /* External Interface Functions */
 void init_io(void) {
@@ -34,8 +39,7 @@ void end_io(void) {
 void edit_workspace_loop(workspace_t *w) {
 	w_io = w;
 
-	//glutDisplayFunc(display);
-	glutIdleFunc(display);
+	glutDisplayFunc(display);
 	glutReshapeFunc(reshape);
 	glutKeyboardFunc(keyboard);
 	//glutSpecialFunc(special);
@@ -54,84 +58,168 @@ void display(void) {
 
 	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 
+	glLoadIdentity();
+	glTranslatef(0, 0, -2);
+
+	draw_grid();
+
 	list_for_each_entry(g, &w->glyphs, list) {
-		//TODO draw glyph
+		draw_glyph(g);
 	}
 
 	list_for_each_entry(m, &w->manipulators, list) {
-		//TODO draw manipulator
 		draw_manipulator(m);
 	}
 
 	list_for_each_entry(a, &w->atoms, list) {
-		//TODO draw atom
+		draw_atom(a);
 	}
 
 	glutSwapBuffers();
+
+	glutPostRedisplay();
 }
 
 void reshape(int w, int h) {
 	//TODO reshape viewwindow
-	float ratio = 1.0;
-	int mx, my, Mx, My;
+	//float ratio = 1.0;
+	int dim;
 
-	if(w > h) {
-		my = 0; My = h;
-		mx = (h-w) / 2; Mx = (h+w)/2;
-	} else {
-		mx = 0; Mx = w;
-		my = (w-h)/2; My = (w+h)/2;
-	}
+	if(w > h)
+		dim = h;
+	else
+		dim = w;
 
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
-	glViewport(mx, my, Mx, My);
-	gluPerspective(45, ratio, 0.1, 100.0);
+	glViewport(0, 0, dim, dim);
+	//gluPerspective(45, ratio, 0.1, 100000.0);
+	glOrtho(-2, 8, -8, 2, -10, 10);
 	glMatrixMode(GL_MODELVIEW);
 }
 
 void keyboard(unsigned char key, int x, int y) {
 	(void)x;
 	(void)y;
-	if(key == 0x1B)
+	if (key == 0x1B)
 		exit(0);
+	if (key == 'X') {
+		if (running) {
+			running = 0;
+		} else {
+			manipulator_t *mindex;
+			list_for_each_entry(mindex, &w_io->manipulators, list)
+				mindex->pc = list_entry(mindex->inst_list.next, inst_t, list);
+			running = 1;
+			glutTimerFunc(0, animate, 0);
+		}
+	}
 }
 
 void draw_manipulator(manipulator_t *m) {
 	glPushMatrix();
+	glTranslatef(m->pos.x, -m->pos.y, m->pos.z);
 
-	glTranslatef(m->pos.x, m->pos.y, m->pos.z-10);
-
-	switch(m->orient) {
+	switch (m->orient) {
 	case NX:
-		glRotatef(90, 0, 1, 0);
-		//glTranslatef();
+		glRotatef(-90, 0, 1, 0);
 		break;
 	case PX:
-		glRotatef(-90, 0, 1, 0);
-		//glTranslatef();
+		glRotatef(90, 0, 1, 0);
 		break;
 	case NY:
-		glRotatef(90, 1, 0, 0);
-		//glTranslatef();
+		glRotatef(-90, 1, 0, 0);
 		break;
 	case PY:
-		glRotatef(-90, 1, 0, 0);
-		//glTranslatef();
+		glRotatef(90, 1, 0, 0);
 		break;
 	case NZ:
 		glRotatef(180, 0, 1, 0);
-		//glTranslatef();
 		break;
 	case PZ:
-		//glRotatef(M_PI_4, 0, 1, 0);
-		//glTranslatef();
 		break;
 	default:
 		break;
 	}
 
-	glutWireSphere(0.5, 20, 20);
-	glutSolidCone(0.125, m->length, 20, 5);
+	glColor3f(1.0, 0.0, 0.0);
+	glutWireSphere(0.25, 40, 40);
+	glColor3f(0.0, 1.0, 0.0);
+	glutWireCone(0.125, m->length, 20, 5);
 	glPopMatrix();
+}
+
+void draw_glyph(glyph_t *g) {
+	glPushMatrix();
+	glTranslatef(g->pos1.x, -g->pos1.y, g->pos1.z);
+
+	switch (g->op) {
+	case BOND:
+		glColor3f(0.0, 1.0, 0.0);
+		glutWireTorus(0.25, 0.5, 40, 40);
+		glPopMatrix();
+		glPushMatrix();
+		glTranslatef(g->pos2.x, -g->pos2.y, g->pos2.z);
+		glutWireTorus(0.25, 0.5, 40, 40);
+		break;
+	case UNBOND:
+		glColor3f(1.0, 0.0, 0.0);
+		glutWireTorus(0.25, 0.5, 40, 40);
+		glPopMatrix();
+		glPushMatrix();
+		glTranslatef(g->pos2.x, -g->pos2.y, g->pos2.z);
+		glutWireTorus(0.25, 0.5, 40, 40);
+		break;
+	case SOURCE:
+		glColor3f(0.0, 0.0, 1.0);
+		glutWireCube(0.5);
+		break;
+	case TRANSMUTE:
+		break;
+	default:
+		break;
+	}
+
+	glPopMatrix();
+}
+
+void draw_atom(atom_t *a) {
+	glPushMatrix();
+	glTranslatef(a->pos.x, -a->pos.y, a->pos.z);
+
+	glColor3f(0.5, 0.5, 0.5);
+	glutSolidSphere(0.2, 40, 40);
+
+	glPopMatrix();
+}
+
+void draw_grid(void) {
+	int x, y, z;
+
+	for (z = 0; z < GRID_SZ_Z; z++) {
+		for (y = 0; y < GRID_SZ_Y; y++) {
+			for (x = 0; x < GRID_SZ_X; x++) {
+				glPushMatrix();
+				glTranslatef(x, -y, z);
+				glColor3f(0.0, 0.0, 1.0);
+				glutSolidSphere(0.05, 10, 10);
+				glPopMatrix();
+			}
+		}
+	}
+}
+
+void animate(int val) {
+	manipulator_t *mindex;
+	glyph_t *gindex;
+	(void)val;
+
+	list_for_each_entry(gindex, &w_io->glyphs, list)
+		act(gindex, &w_io->atoms);
+	list_for_each_entry(mindex, &w_io->manipulators, list)
+		step(mindex, &w_io->atoms);
+
+	glutPostRedisplay();
+	if (running)
+		glutTimerFunc(500, animate, 0);
 }

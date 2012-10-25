@@ -1,19 +1,53 @@
 CC = gcc
 CFLAGS = -Wall -Wextra
+RM = rm -f
+
+ENV ?= mingw
+
+ifeq ($(ENV), mingw)
+CURSES = -lpdcurses
+GLUT = -lfreeglut
+GLU = -lglu32
+GL = -lopengl32
+EXE_SUFFIX = .exe
+endif
+ifeq ($(ENV), linux)
+CURSES = -lncurses
+GLUT = -lglut
+GLU = -lGLU
+GL = -lGL
+endif
+
 OBJECTS = alchem.o workspace.o atom.o manipulator.o glyph.o
+CURSES_OBJECTS = $(OBJECTS) curses_io.o
+GLUT_OBJECTS = $(OBJECTS) glut_io.o
+GL_OBJECTS = $(OBJECTS) gl_io.o
+ALL_OBJECTS = $(OBJECTS) curses_io.o glut_io.o gl_io.o
 
-.PHONY: all
-all: alchem-curses alchem-glut alchem-gl
+CURSES_EXE = alchem-curses$(EXE_SUFFIX)
+GLUT_EXE = alchem-glut$(EXE_SUFFIX)
+GL_EXE = alchem-gl$(EXE_SUFFIX)
+EXES = $(CURSES_EXE) $(GLUT_EXE) $(GL_EXE)
 
-alchem-curses: $(OBJECTS) curses_io.o
-	$(CC) -o alchem-curses $(OBJECTS) curses_io.o $(CFLAGS) -lncurses
+.PHONY: all clean
 
-alchem-glut: $(OBJECTS) glut_io.o
-	$(CC) -o alchem-glut $(OBJECTS) glut_io.o $(CFLAGS) -lglut -lGL -lGLU
+all: $(EXES)
 
-alchem-gl: $(OBJECTS) gl_io.o
-	$(CC) -o alchem-gl $(OBJECTS) gl_io.o $(CFLAGS) -lGL
+$(CURSES_EXE): $(CURSES_OBJECTS)
+	@echo LD $@
+	$(CC) $(CFLAGS) -o $@ $(CURSES_OBJECTS) $(CURSES)
 
-.PHONY: clean
+$(GLUT_EXE): $(GLUT_OBJECTS)
+	@echo LD $@
+	$(CC) $(CFLAGS) -o $@ $(GLUT_OBJECTS) $(GLUT) $(GLU) $(GL)
+
+$(GL_EXE): $(GL_OBJECTS)
+	@echo LD $@
+	$(CC) $(CFLAGS) -o $@ $(GL_OBJECTS) $(GL)
+
+%.o: %.c
+	@echo CC $@
+	$(CC) $(CFLAGS) -c -o $@ $<
+
 clean:
-	rm -f alchem-curses alchem-glut alchem-gl $(OBJECTS) curses_io.o glut_io.o gl_io.o
+	$(RM) $(EXES) $(ALL_OBJECTS)
