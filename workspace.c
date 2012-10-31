@@ -1,36 +1,86 @@
 #include "workspace.h"
 #include <stdlib.h>
+#include <stdint.h>
 
-workspace_t *new_workspace(void) {
-	workspace_t *w;
+void *remove_item(struct workspace *w, struct position pos, enum item_type t);
 
-	w = (workspace_t *)malloc(sizeof(workspace_t));
-	INIT_LIST_HEAD(&w->atoms);
-	INIT_LIST_HEAD(&w->manipulators);
-	INIT_LIST_HEAD(&w->glyphs);
+struct workspace *new_workspace(uint16_t width, uint16_t height, uint16_t depth)
+{
+	struct workspace *w;
+	uint64_t size;
+
+	w = (struct workspace *)malloc(sizeof(struct workspace));
+	w->width = width;
+	w->height = height;
+	w->depth = depth;
+	size = width * height * depth;
+	w->items = (struct item *)calloc(size, sizeof(struct item));
 	SET_POS(w->pos, 0, 0, 0);
 
 	return w;
 }
 
-void add_atom(workspace_t *w, atom_t *a) {
-	list_add(&a->list, &w->atoms);
+void add_atom(struct workspace *w, atom_t *a, struct position pos)
+{
+	struct item *i = &w->items[pos.x][pos.y][pos.z];
+	if (i->type == 0) {
+		i->type = ITEM_ATOM;
+		i->item.atom = a;
+	}
 }
 
-void add_manipulator(workspace_t *w, manipulator_t *m) {
-	list_add(&m->list, &w->manipulators);
+void add_manipulator(struct workspace *w, struct manipulator *m, struct position pos)
+{
+	struct item *i = &w->items[pos.x][pos.y][pos.z];
+	if (i->type == 0) {
+		i->type = ITEM_MANIPULATOR;
+		i->item.manipulator = m;
+	}
 }
 
-void remove_manipulator(manipulator_t *m) {
-	list_del(&m->list);
-	delete_manipulator(m);
+void add_glyph(struct workspace *w, struct glyph *g, struct position pos)
+{
+	struct item *i = &w->items[pos.x][pos.y][pos.z];
+	if (i->type == 0) {
+		i->type = ITEM_GLYPH;
+		i->item.glyph = g;
+	}
 }
 
-void add_glyph(workspace_t *w, glyph_t *g) {
-	list_add(&g->list, &w->glyphs);
+void *remove_item(struct workspace *w, struct position pos, enum item_type t)
+{
+	void *ret;
+	struct item *i;
+
+	i = &w->items[pos.x][pos.y][pos.z];
+	if (i->type == t) {
+		ret = (void *)i->item.atom;
+		i->type = ITEM_NONE;
+		i->item.atom = NULL;
+	} else {
+		ret = NULL;
+	}
+
+	return ret;
 }
 
-void remove_glyph(glyph_t *g) {
-	list_del(&g->list);
-	delete_glyph(g);
+struct atom *remove_atom(struct workspace *w, struct position pos)
+{
+	struct atom *a;
+	a = (struct atom *)remove_item(w, pos, ITEM_ATOM);
+	return a;
+}
+
+struct manipulator *remove_manipulator(struct workspace *w, struct position pos)
+{
+	struct manipulator *m;
+	m = (struct manipulator *)remove_item(w, pos, ITEM_MANIPULATOR);
+	return m;
+}
+
+struct glyph *remove_glyph(struct workspace *w, struct position pos)
+{
+	struct atom *g;
+	g = (struct glyph *)remove_item(w, pos, ITEM_GLYPH);
+	return g;
 }

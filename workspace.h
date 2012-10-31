@@ -6,24 +6,37 @@
 #include "atom.h"
 #include "manipulator.h"
 #include "glyph.h"
-#include "list.h"
-
-#define GRID_SZ_X 10
-#define GRID_SZ_Y 10
-#define GRID_SZ_Z 10
 
 typedef struct workspace {
-	struct list_head atoms;
-	struct list_head manipulators;
-	struct list_head glyphs;
+	uint16_t width;
+	uint16_t height;
+	uint16_t depth;
+	struct item *items;
 	position_t pos;
 } workspace_t;
 
-workspace_t *new_workspace(void);
-void add_atom(workspace_t *w, atom_t *a);
-void add_manipulator(workspace_t *w, manipulator_t *m);
-void remove_manipulator(manipulator_t *m);
-void add_glyph(workspace_t *w, glyph_t *g);
-void remove_glyph(glyph_t *g);
+enum item_type {
+	ITEM_NONE = 0,
+	ITEM_ATOM,
+	ITEM_MANIPULATOR,
+	ITEM_GLYPH
+};
+
+struct item {
+	item_type type;
+	union {
+		struct atom *atom;
+		struct manipulator *manipulator;
+		struct glyph *glyph;
+	} item;
+};
+
+struct workspace *new_workspace(uint16_t width, uint16_t height, uint16_t depth);
+void add_atom(struct workspace *w, struct atom *a, struct position pos);
+void add_manipulator(struct workspace *w, struct manipulator *m, struct position pos);
+void add_glyph(struct workspace *w, struct glyph *g, struct position pos);
+struct atom *remove_atom(struct workspace *w, struct position pos);
+struct manipulator *remove_manipulator(struct workspace *w, struct position pos);
+struct glyph *remove_glyph(struct workspace *w, struct position pos);
 
 #endif

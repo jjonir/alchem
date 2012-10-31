@@ -32,7 +32,7 @@ static inline position_t pos(uint8_t x, uint8_t y, uint8_t z) {
 	return rv;
 }
 
-typedef enum {
+typedef enum orientation {
 	PX,PY,PZ,NX,NY,NZ
 } orientation_t;
 
