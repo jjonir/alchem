@@ -12,21 +12,21 @@ int main() {
 
 	init_io();
 
-	w = new_workspace();
+	w = new_workspace(10, 10, 10);
 
 	m = new_manipulator(PX, 2, 1, 0, 0);
 	inst_add(m, CLOSE_HEAD);
 	inst_add(m, ROT_PZ);
 	inst_add(m, OPEN_HEAD);
 	inst_add(m, ROT_NZ);
-	add_manipulator(w, m);
+	add_manipulator(w, m, pos(1, 0, 0));
 
 	m = new_manipulator(PX, 2, 0, 2, 0);
 	inst_add(m, OPEN_HEAD);
 	inst_add(m, RETRACT);
 	inst_add(m, CLOSE_HEAD);
 	inst_add(m, EXTEND);
-	add_manipulator(w, m);
+	add_manipulator(w, m, pos(0, 2, 0));
 /*
 	add_manipulator(w, new_manipulator(PX, 4, 0, 0, 0));
 	add_manipulator(w, new_manipulator(NX, 4, 1, 0, 0));

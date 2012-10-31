@@ -23,7 +23,7 @@ enum item_type {
 };
 
 struct item {
-	item_type type;
+	enum item_type type;
 	union {
 		struct atom *atom;
 		struct manipulator *manipulator;
