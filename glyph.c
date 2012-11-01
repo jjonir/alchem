@@ -1,59 +1,41 @@
-#include "glyph.h"
 #include "atom.h"
+#include "glyph.h"
+#include "workspace.h"
 #include <stdlib.h>
 
-/* Local Function Prototypes */
+struct glyph *new_glyph(enum glyph_op op, uint8_t type, struct position pos)
+{
+	struct glyph *g;
 
-/* External Interface Functions */
-glyph_t *new_glyph(glyph_op_t op, uint8_t type, position_t p1, position_t p2) {
-	glyph_t *g;
-
-	g = (glyph_t *)malloc(sizeof(glyph_t));
-	INIT_LIST_HEAD(&g->list);
-	SET_POS(g->pos1, p1.x, p1.y, p1.z);
-	SET_POS(g->pos2, p2.x, p2.y, p2.z);
+	g = (struct glyph *)malloc(sizeof(struct glyph));
+	SET_POS(g->pos, pos.x, pos.y, pos.z);
 	g->op = op;
 	g->type = type;
-	return g;
-}
-
-glyph_t *glyph_at(struct list_head *glyphs, position_t pos) {
-	glyph_t *g;
-
-	list_for_each_entry(g, glyphs, list) {
-		if(POS_EQ(pos, g->pos1) || POS_EQ(pos, g->pos2))
-			break;
-	}
-	if(g == list_entry(glyphs, glyph_t, list))
-		g = NULL;
 
 	return g;
 }
 
-void delete_glyph(glyph_t *g) {
+void delete_glyph(struct glyph *g)
+{
 	free(g);
 }
 
-void act(glyph_t *g, struct list_head *atoms) {
-	atom_t *a1, *a2;
+void act(struct workspace *w, struct glyph *g)
+{
+	struct atom *a;
 
-	a1 = atom_at(atoms, g->pos1);
-	a2 = atom_at(atoms, g->pos2);
 	switch(g->op) {
 	case BOND:
-		if(a1 && a2) {
-			add_bond(a1, a2);
-		}
+		add_bond(w, g->pos, (enum orientation)g->type);
 		break;
 	case UNBOND:
-		if(a1 && a2) {
-			remove_bond(a1, a2);
-		}
+		remove_bond(w, g->pos, (enum orientation)g->type);
 		break;
 	case SOURCE:
-		if(a1 == NULL) {
-			a1 = new_atom((element_t)g->type, g->pos1);
-			list_add(&a1->list, atoms);
+//TODO move most of this into atom.c; workspace ignores add_* if there's something there already
+		if (atom_at(w, g->pos) == NULL) {
+			a = new_atom((enum element)g->type, g->pos);
+			add_atom(w, a, g->pos);
 		}
 		break;
 	case TRANSMUTE:

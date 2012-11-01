@@ -1,4 +1,5 @@
 #include "atom.h"
+#include "workspace.h"
 #include <stdlib.h>
 #include <string.h>
 #include "list.h"
@@ -7,170 +8,146 @@ const char *element_string_table[] = {
 	"H", "He", "Li", "Be", "Al", "C", "N", "O", "F", "Ar" //...
 };
 
-/* Local Function Prototypes */
-void rotate_atom(atom_t *a, position_t pivot, orientation_t dir);
-void move_atom(atom_t *a, position_t dp);
-uint8_t in_compound(atom_t *a, atom_t *c);
-void build_compound(atom_t *a);
+void rotate_atom(struct atom *a, struct position pivot, enum orientation dir);
+void move_atom(struct atom *a, struct position dp);
+uint8_t in_compound(struct atom *find, struct list_head *l);
+void build_compound(struct workspace *w, struct position pos, struct list_head *l);
 
-/* External Interface Functions */
-atom_t *new_atom(element_t element, position_t pos) {
-	atom_t *a;
+struct atom *new_atom(enum element e, struct position pos)
+{
+	struct atom *a;
 
-	a = (atom_t *)malloc(sizeof(atom_t));
-	INIT_LIST_HEAD(&a->list);
-	INIT_LIST_HEAD(&a->bond_list);
-	INIT_LIST_HEAD(&a->compound);
+	a = (struct atom *)malloc(sizeof(struct atom));
+	memset(a->bonds, 0, ORIENTATION_NUM);
 	SET_POS(a->pos, pos.x, pos.y, pos.z);
-	a->element = element;
+	a->element = e;
 
 	return a;
 }
 
-atom_t *atom_at(struct list_head *atoms, position_t pos) {
+void add_bond(struct workspace *w, struct position pos1, enum orientation o)
+{
+	struct position pos2;
+	struct atom *a1, *a2;
+
+	POS_ADD(pos2, pos1, pos_shift(o, 1));
+
+	a1 = atom_at(w, pos1);
+	a2 = atom_at(w, pos2);
+	if ((a1 != NULL) && (a2 != NULL)) {
+		a1->bonds[o]++;
+		a2->bonds[opposite(o)]++;
+	}
+//TODO check consistency, or maybe do that elsewhere, or maybe assume it works
+}
+
+void remove_bond(struct workspace *w, struct position pos1, enum orientation o)
+{
+	struct position pos2;
+	struct atom *a1, *a2;
+
+	POS_ADD(pos2, pos1, pos_shift(o, 1));
+
+	a1 = atom_at(w, pos1);
+	a2 = atom_at(w, pos2);
+	if ((a1 != NULL) && (a2 != NULL)) {
+		a1->bonds[o]--;
+		a2->bonds[opposite(o)]--;
+	}
+//TODO don't reduce when 0, also maybe check consistency
+}
+
+void rotate_compound(struct workspace *w, struct position c, struct position pivot, enum orientation dir)
+{
 	atom_t *a;
+	LIST_HEAD(to_rotate);
 
-	list_for_each_entry(a, atoms, list) {
-		if(POS_EQ(pos, a->pos))
-			break;
-	}
-	if(a == list_entry(atoms, atom_t, list))
-		a = NULL;
-
-	return a;
-}
-
-void add_bond(atom_t *a1, atom_t *a2) {
-	bond_t *b1, *b2;
-
-	list_for_each_entry(b1, &a1->bond_list, list) {
-		if(b1->bonded_atom == a2)
-			break;
-	}
-	list_for_each_entry(b2, &a2->bond_list, list) {
-		if(b2->bonded_atom == a1)
-			break;
-	}
-	if((b1->bonded_atom == a2) && (b2->bonded_atom == a1)) {
-		b1->bonds++;
-		b2->bonds++;
-	} else if((&b1->list == &a1->bond_list) && (&b2->list == &a2->bond_list)) {
-		b1 = (bond_t *)malloc(sizeof(bond_t));
-		b1->bonded_atom = a2;
-		b2 = (bond_t *)malloc(sizeof(bond_t));
-		b2->bonded_atom = a1;
-		b1->bonds = b2->bonds = 1;
-
-		list_add(&b1->list, &a1->bond_list);
-		list_add(&b2->list, &a2->bond_list);
-	} else {
-		// one direction of the bond was found, the other was not...
-		// this is an error state
-	}
-}
-
-void remove_bond(atom_t *a1, atom_t *a2) {
-	bond_t *b1, *b2;
-
-	list_for_each_entry(b1, &a1->bond_list, list) {
-		if(b1->bonded_atom == a2)
-			break;
-	}
-	list_for_each_entry(b2, &a2->bond_list, list) {
-		if(b2->bonded_atom == a1)
-			break;
-	}
-	if((b1->bonded_atom == a2) && (b2->bonded_atom == a1)) {
-		b1->bonds--;
-		b2->bonds--;
-		if((b1->bonds == 0) && (b2->bonds == 0)) {
-			list_del(&b1->list);
-			list_del(&b2->list);
-			free(b1);
-			free(b2);
-		} else if(b1->bonds != b2->bonds) {
-			// this is an error state
-		}
-	} else if((&b1->list == &a1->bond_list) && (&b2->list == &a2->bond_list)) {
-		// no bonds, do nothing
-	} else {
-		// one direction of the bond was found, the other was not...
-		// this is an error state
-	}
-}
-
-void rotate_compound(atom_t *c, position_t pivot, orientation_t dir) {
-	atom_t *a;
-
-	build_compound(c);
-	rotate_atom(c, pivot, dir);
-	list_for_each_entry(a, &c->compound, compound) {
+	build_compound(w, c, &to_rotate);
+	list_for_each_entry(a, &to_rotate, compound) {
+		remove_atom(w, a->pos);
 		rotate_atom(a, pivot, dir);
 	}
-}
-
-void move_compound(atom_t *c, position_t dp) {
-	atom_t *a;
-
-	build_compound(c);
-	move_atom(c, dp);
-	list_for_each_entry(a, &c->compound, compound) {
-		move_atom(a, dp);
+	list_for_each_entry(a, &to_rotate, compound) {
+		add_atom(w, a, a->pos);
+		//TODO check for something already there
 	}
 }
 
-const char *element_string(element_t element) {
-	return element_string_table[element];
+void move_compound(struct workspace *w, struct position c, struct position dp)
+{
+	atom_t *a;
+	LIST_HEAD(to_move);
+
+	build_compound(w, c, &to_move);
+	list_for_each_entry(a, &to_move, compound) {
+		remove_atom(w, a->pos);
+		move_atom(a, dp);
+	}
+	list_for_each_entry(a, &to_move, compound) {
+		add_atom(w, a, a->pos);
+		//TODO check for something already there
+	}
+}
+
+const char *element_string(enum element e)
+{
+	return element_string_table[e];
 }
 
 /* Local Functions */
-void rotate_atom(atom_t *a, position_t pivot, orientation_t dir) {
-	int8_t dx=a->pos.x-pivot.x, dy=a->pos.y-pivot.y/*, dz=a->pos.z-pivot.z*/;
+void rotate_atom(struct atom *a, struct position pivot, enum orientation dir)
+{
+	struct position dp;
+	POS_SUB(dp, a->pos, pivot);
 
 	switch(dir) {
+	//TODO other rotation directions
+	//TODO update bond directions
 	case PZ:
-		a->pos.x = pivot.x - dy;
-		a->pos.y = pivot.y + dx;
+		a->pos.x = pivot.x - dp.y;
+		a->pos.y = pivot.y + dp.x;
 		break;
 	case NZ:
-		a->pos.x = pivot.x + dy;
-		a->pos.y = pivot.y - dx;
+		a->pos.x = pivot.x + dp.y;
+		a->pos.y = pivot.y - dp.x;
 		break;
 	default:
 		break;
 	}
 }
 
-void move_atom(atom_t *a, position_t dp) {
+void move_atom(struct atom *a, struct position dp)
+{
 	POS_ADD(a->pos, a->pos, dp);
 }
 
-uint8_t in_compound(atom_t *a, atom_t *c) {
-	struct list_head *l;
+uint8_t in_compound(struct atom *find, struct list_head *l)
+{
+	struct atom *a;
 
-	if(a == c)
-		return 1;
-	list_for_each(l, &c->compound) {
-		if(&a->compound == l)
+	list_for_each_entry(a, l, compound) {
+		if(a == find)
 			return 1;
 	}
 	return 0;
 }
 
-void _build_compound(atom_t *a) {
-	bond_t *b;
-
-	list_for_each_entry(b, &a->bond_list, list) {
-		if(!in_compound(b->bonded_atom, a)) {
-			list_add(&b->bonded_atom->compound, &a->compound);
-			_build_compound(b->bonded_atom);
-		}
-	}
-}
-
 /* NEVER try to use atom.compound without first calling this function */
 /* atom.compound is not kept up-to-date in normal bonding activity */
-void build_compound(atom_t *a) {
-	INIT_LIST_HEAD(&a->compound);
-	_build_compound(a);
+void build_compound(struct workspace *w, struct position pos, struct list_head *l)
+{
+	struct atom *a;
+	enum orientation dir;
+	struct position adj;
+
+	a = atom_at(w, pos);
+	if ((a != NULL) && !in_compound(a, l)) {
+		list_add(&a->compound, l);
+		for (dir = 0; dir < ORIENTATION_NUM; dir++) {
+			if (a->bonds[dir] > 0) {
+				POS_ADD(adj, pos, pos_shift(dir, 1));
+				build_compound(w, adj, l);
+			}
+		}
+	}
 }

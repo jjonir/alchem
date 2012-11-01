@@ -4,9 +4,12 @@
 #include <stdint.h>
 #include <math.h>
 #include "io.h"
+#include "atom.h"
+#include "glyph.h"
+#include "manipulator.h"
 #include "workspace.h"
 
-static workspace_t *w_io;
+static struct workspace *w_io;
 static int running = 0;
 
 /* Local Function Prototypes */
@@ -16,9 +19,9 @@ void keyboard(unsigned char key, int x, int y);
 void animate(int val);
 
 void draw_grid(void);
-void draw_manipulator(manipulator_t *m);
-void draw_glyph(glyph_t *g);
-void draw_atom(atom_t *a);
+void draw_manipulator(struct manipulator *m);
+void draw_glyph(struct glyph *g);
+void draw_atom(struct atom *a);
 
 /* External Interface Functions */
 void init_io(void) {
@@ -36,7 +39,7 @@ void end_io(void) {
 	//glut is closed with exit() or something
 }
 
-void edit_workspace_loop(workspace_t *w) {
+void edit_workspace_loop(struct workspace *w) {
 	w_io = w;
 
 	glutDisplayFunc(display);
@@ -51,10 +54,11 @@ void edit_workspace_loop(workspace_t *w) {
 
 /* Local Functions */
 void display(void) {
-	atom_t *a;
-	manipulator_t *m;
-	glyph_t *g;
-	workspace_t *w = w_io;
+	struct atom *a;
+	struct manipulator *m;
+	struct glyph *g;
+	struct workspace *w = w_io;
+	struct position pos;
 
 	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 
@@ -63,16 +67,15 @@ void display(void) {
 
 	draw_grid();
 
-	list_for_each_entry(g, &w->glyphs, list) {
-		draw_glyph(g);
-	}
-
-	list_for_each_entry(m, &w->manipulators, list) {
-		draw_manipulator(m);
-	}
-
-	list_for_each_entry(a, &w->atoms, list) {
-		draw_atom(a);
+	for_each_position(pos, w->width, w->height, w->depth) {
+		if ((a = atom_at(w, pos)) != NULL)
+			draw_atom(a);
+		else if ((g = glyph_at(w, pos)) != NULL)
+			draw_glyph(g);
+		else if ((m = manipulator_at(w, pos)) != NULL)
+			draw_manipulator(m);
+		else
+			; // TODO draw something?
 	}
 
 	glutSwapBuffers();
@@ -101,22 +104,26 @@ void reshape(int w, int h) {
 void keyboard(unsigned char key, int x, int y) {
 	(void)x;
 	(void)y;
+	struct manipulator *m;
+	struct position pos;
+
 	if (key == 0x1B)
 		exit(0);
 	if (key == 'X') {
 		if (running) {
 			running = 0;
 		} else {
-			manipulator_t *mindex;
-			list_for_each_entry(mindex, &w_io->manipulators, list)
-				mindex->pc = list_entry(mindex->inst_list.next, inst_t, list);
+			for_each_position(pos, w_io->width, w_io->height, w_io->depth) {
+				if ((m = manipulator_at(w_io, pos)) != NULL)
+					m->pc = list_entry(m->inst_list.next, struct inst, list);
+			}
 			running = 1;
 			glutTimerFunc(0, animate, 0);
 		}
 	}
 }
 
-void draw_manipulator(manipulator_t *m) {
+void draw_manipulator(struct manipulator *m) {
 	glPushMatrix();
 	glTranslatef(m->pos.x, -m->pos.y, m->pos.z);
 
@@ -149,25 +156,17 @@ void draw_manipulator(manipulator_t *m) {
 	glPopMatrix();
 }
 
-void draw_glyph(glyph_t *g) {
+void draw_glyph(struct glyph *g) {
 	glPushMatrix();
-	glTranslatef(g->pos1.x, -g->pos1.y, g->pos1.z);
+	glTranslatef(g->pos.x, -g->pos.y, g->pos.z);
 
 	switch (g->op) {
 	case BOND:
 		glColor3f(0.0, 1.0, 0.0);
 		glutWireTorus(0.25, 0.5, 40, 40);
-		glPopMatrix();
-		glPushMatrix();
-		glTranslatef(g->pos2.x, -g->pos2.y, g->pos2.z);
-		glutWireTorus(0.25, 0.5, 40, 40);
 		break;
 	case UNBOND:
 		glColor3f(1.0, 0.0, 0.0);
-		glutWireTorus(0.25, 0.5, 40, 40);
-		glPopMatrix();
-		glPushMatrix();
-		glTranslatef(g->pos2.x, -g->pos2.y, g->pos2.z);
 		glutWireTorus(0.25, 0.5, 40, 40);
 		break;
 	case SOURCE:
@@ -183,7 +182,7 @@ void draw_glyph(glyph_t *g) {
 	glPopMatrix();
 }
 
-void draw_atom(atom_t *a) {
+void draw_atom(struct atom *a) {
 	glPushMatrix();
 	glTranslatef(a->pos.x, -a->pos.y, a->pos.z);
 
@@ -194,30 +193,29 @@ void draw_atom(atom_t *a) {
 }
 
 void draw_grid(void) {
-	int x, y, z;
+	struct position pos;
 
-	for (z = 0; z < GRID_SZ_Z; z++) {
-		for (y = 0; y < GRID_SZ_Y; y++) {
-			for (x = 0; x < GRID_SZ_X; x++) {
-				glPushMatrix();
-				glTranslatef(x, -y, z);
-				glColor3f(0.0, 0.0, 1.0);
-				glutSolidSphere(0.05, 10, 10);
-				glPopMatrix();
-			}
-		}
+	for_each_position(pos, w_io->width, w_io->height, w_io->depth) {
+		glPushMatrix();
+		glTranslatef(pos.x, -pos.y, pos.z);
+		glColor3f(0.0, 0.0, 1.0);
+		glutSolidSphere(0.05, 10, 10);
+		glPopMatrix();
 	}
 }
 
 void animate(int val) {
-	manipulator_t *mindex;
-	glyph_t *gindex;
 	(void)val;
+	struct manipulator *m;
+	struct glyph *g;
+	struct position pos;
 
-	list_for_each_entry(gindex, &w_io->glyphs, list)
-		act(gindex, &w_io->atoms);
-	list_for_each_entry(mindex, &w_io->manipulators, list)
-		step(mindex, &w_io->atoms);
+	for_each_position(pos, w_io->width, w_io->height, w_io->depth) {
+		if ((g = glyph_at(w_io, pos)) != NULL)
+			act(w_io, g);
+		if ((m = manipulator_at(w_io, pos)) != NULL)
+			step(w_io, m);
+	}
 
 	glutPostRedisplay();
 	if (running)

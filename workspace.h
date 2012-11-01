@@ -3,9 +3,10 @@
 
 #include <stdint.h>
 #include "space.h"
-#include "atom.h"
-#include "manipulator.h"
-#include "glyph.h"
+
+struct atom;
+struct manipulator;
+struct glyph;
 
 typedef struct workspace {
 	uint16_t width;
@@ -24,11 +25,14 @@ enum item_type {
 
 struct item {
 	enum item_type type;
+	void *item;
+#if 0
 	union {
 		struct atom *atom;
 		struct manipulator *manipulator;
 		struct glyph *glyph;
 	} item;
+#endif
 };
 
 struct workspace *new_workspace(uint16_t width, uint16_t height, uint16_t depth);
@@ -38,5 +42,8 @@ void add_glyph(struct workspace *w, struct glyph *g, struct position pos);
 struct atom *remove_atom(struct workspace *w, struct position pos);
 struct manipulator *remove_manipulator(struct workspace *w, struct position pos);
 struct glyph *remove_glyph(struct workspace *w, struct position pos);
+struct atom *atom_at(struct workspace *w, struct position pos);
+struct manipulator *manipulator_at(struct workspace *w, struct position pos);
+struct glyph *glyph_at(struct workspace *w, struct position pos);
 
 #endif

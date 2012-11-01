@@ -51,8 +51,8 @@ void display(workspace_t *w) {
 	clear();
 
 	/* Draw the grid */
-	for(x = 0; x < GRID_SZ_X; x++) {
-		for(y = 0; y < GRID_SZ_Y; y++) {
+	for(x = 0; x < w->width; x++) {
+		for(y = 0; y < w->height; y++) {
 			if((x == w->pos.x) && (y == w->pos.y) && (z == w->pos.z))
 				attron(A_STANDOUT);
 			mvaddch(3*y+1, 4*x+1, '.');
@@ -126,7 +126,7 @@ int8_t process_input_blocking(workspace_t *w) {
 			w->pos.x--;
 		break;
 	case KEY_RIGHT:
-		if(w->pos.x < GRID_SZ_X-1)
+		if(w->pos.x < w->width-1)
 			w->pos.x++;
 		break;
 	case KEY_UP:
@@ -134,7 +134,7 @@ int8_t process_input_blocking(workspace_t *w) {
 			w->pos.y--;
 		break;
 	case KEY_DOWN:
-		if(w->pos.y < GRID_SZ_Y-1)
+		if(w->pos.y < w->height-1)
 			w->pos.y++;
 		break;
 	/* Thing Placement and Removal */
@@ -187,7 +187,7 @@ int8_t process_input_blocking(workspace_t *w) {
 		break;
 	case 'd':
 		if(m) {
-			if(m->pos.x < GRID_SZ_X-1) {
+			if(m->pos.x < w->width-1) {
 				w->pos.x++;
 				if(manipulator_at(&w->manipulators, w->pos) == NULL)
 					m->pos.x++;
@@ -209,7 +209,7 @@ int8_t process_input_blocking(workspace_t *w) {
 		break;
 	case 's':
 		if(m) {
-			if(m->pos.y < GRID_SZ_Y-1) {
+			if(m->pos.y < w->height-1) {
 				w->pos.y++;
 				if(manipulator_at(&w->manipulators, w->pos) == NULL)
 					m->pos.y++;
@@ -328,11 +328,11 @@ op_t pick_op(void) {
 	op_t y;
 
 	do {
-		mvprintw(1, 4*GRID_SZ_X+10, "Instructions");
+		mvprintw(1, 4*w->width+10, "Instructions");
 		for(y = 0; y <= NOP; y++) {
 			if(y == op)
 				attron(A_STANDOUT);
-			mvprintw(2+y, 4*GRID_SZ_X+10, op_string(y));
+			mvprintw(2+y, 4*w->width+10, op_string(y));
 			if(y == op)
 				attroff(A_STANDOUT);
 		}
@@ -351,11 +351,11 @@ element_t pick_element(void) {
 	element_t y;
 
 	do {
-		mvprintw(1, 4*GRID_SZ_X+1, "Elements");
+		mvprintw(1, 4*w->width+1, "Elements");
 		for(y = 0; y < ATOM_END; y++) {
 			if(y == element)
 				attron(A_STANDOUT);
-			mvprintw(2+y, 4*GRID_SZ_X+1, element_string(y));
+			mvprintw(2+y, 4*w->width+1, element_string(y));
 			if(y == element)
 				attroff(A_STANDOUT);
 		}
@@ -488,11 +488,11 @@ void print_inst_list(manipulator_t *m) {
 	inst_t *i;
 	int y=0;
 
-	mvprintw(1, 4*GRID_SZ_X+1, "Program");
+	mvprintw(1, 4*w->width+1, "Program");
 	list_for_each_entry(i, &m->inst_list, list) {
 		if(i == m->pc)
 			attron(A_STANDOUT);
-		mvprintw(2+y, 4*GRID_SZ_X+1, op_string(i->op));
+		mvprintw(2+y, 4*w->width+1, op_string(i->op));
 		if(i == m->pc)
 			attroff(A_STANDOUT);
 		y++;
