@@ -5,7 +5,7 @@
 #include "list.h"
 
 const char *element_string_table[] = {
-	"H", "He", "Li", "Be", "Al", "C", "N", "O", "F", "Ar" //...
+	"", "H", "He", "Li", "Be", "Al", "C", "N", "O", "F", "Ar" //...
 };
 
 void rotate_atom(struct atom *a, struct position pivot, enum orientation dir);

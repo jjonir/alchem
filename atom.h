@@ -8,7 +8,7 @@
 struct workspace;
 
 typedef enum element {
-	ATOM_H, ATOM_HE, ATOM_LI, ATOM_BE, ATOM_AL, ATOM_C, ATOM_N, ATOM_O, ATOM_F, ATOM_AR, //...
+	ATOM_NONE, ATOM_H, ATOM_HE, ATOM_LI, ATOM_BE, ATOM_AL, ATOM_C, ATOM_N, ATOM_O, ATOM_F, ATOM_AR, //...
 	ATOM_END
 } element_t;
 
