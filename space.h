@@ -3,13 +3,13 @@
 
 #include <stdint.h>
 
-typedef struct position {
+struct position {
 	uint8_t x, y, z;
-} position_t;
+};
 
-typedef enum orientation {
-	PX,PY,PZ,NX,NY,NZ,ORIENTATION_NUM
-} orientation_t;
+enum orientation {
+	PX,NX,PY,NY,PZ,NZ,ORIENTATION_NUM
+};
 
 #define for_each_position(P, X, Y, Z) \
 	for (P.z = 0; P.z < Z; P.z++) \
@@ -43,11 +43,21 @@ typedef enum orientation {
 	LV.z = P1.z + P2.z; \
 } while (0)
 
-static inline position_t pos(uint8_t x, uint8_t y, uint8_t z)
+static inline struct position position(uint8_t x, uint8_t y, uint8_t z)
 {
-	position_t rv;
+	struct position rv;
 	rv.x = x; rv.y = y; rv.z = z;
 	return rv;
+}
+
+static inline struct position pos_add(struct position a, struct position b)
+{
+	struct position p = {
+		a.x + b.x,
+		a.y + b.y,
+		a.z + b.z
+	};
+	return p;
 }
 
 static inline int adjacent(struct position p1, struct position p2)

@@ -11,6 +11,7 @@ struct glyph *new_glyph(enum glyph_op op, uint8_t type, struct position pos)
 	SET_POS(g->pos, pos.x, pos.y, pos.z);
 	g->op = op;
 	g->type = type;
+	g->a = NULL;
 
 	return g;
 }
@@ -22,8 +23,6 @@ void delete_glyph(struct glyph *g)
 
 void act(struct workspace *w, struct glyph *g)
 {
-	struct atom *a;
-
 	switch(g->op) {
 	case BOND:
 		add_bond(w, g->pos, (enum orientation)g->type);
@@ -32,11 +31,8 @@ void act(struct workspace *w, struct glyph *g)
 		remove_bond(w, g->pos, (enum orientation)g->type);
 		break;
 	case SOURCE:
-//TODO move most of this into atom.c; workspace ignores add_* if there's something there already
-		if (atom_at(w, g->pos) == NULL) {
-			a = new_atom((enum element)g->type, g->pos);
-			add_atom(w, a, g->pos);
-		}
+		if (g->a == NULL)
+			g->a = new_atom((enum element)g->type, g->pos);
 		break;
 	case TRANSMUTE:
 		break;

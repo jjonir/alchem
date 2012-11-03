@@ -70,7 +70,7 @@ void display(void) {
 	for_each_position(pos, w->width, w->height, w->depth) {
 		if ((a = atom_at(w, pos)) != NULL)
 			draw_atom(a);
-		else if ((g = glyph_at(w, pos)) != NULL)
+		if ((g = glyph_at(w, pos)) != NULL)
 			draw_glyph(g);
 		else if ((m = manipulator_at(w, pos)) != NULL)
 			draw_manipulator(m);

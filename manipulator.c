@@ -1,4 +1,5 @@
 #include "atom.h"
+#include "glyph.h"
 #include "manipulator.h"
 #include "workspace.h"
 #include <stdint.h>
@@ -17,7 +18,7 @@ struct manipulator *new_manipulator(enum orientation orient, uint8_t length, str
 	m->orient = orient;
 	m->length = length;
 	m->head_state = HEAD_OPEN;
-	m->grabbed_atom = NULL;
+	m->grabbed = 0;
 	INIT_LIST_HEAD(&m->inst_list);
 	m->pc = NULL;
 	return m;
@@ -58,9 +59,9 @@ void inst_del(struct manipulator *m) {
 	struct inst *i = m->pc;
 	if(!list_empty(&m->inst_list)) {
 		if(m->pc->list.next == &m->inst_list)
-			m->pc = list_entry(m->pc->list.prev, inst_t, list);
+			m->pc = list_entry(m->pc->list.prev, struct inst, list);
 		else
-			m->pc = list_entry(m->pc->list.next, inst_t, list);
+			m->pc = list_entry(m->pc->list.next, struct inst, list);
 		list_del(&i->list);
 		if(list_empty(&m->inst_list)) {
 			m->pc = NULL;
@@ -121,31 +122,31 @@ void step(struct workspace *w, struct manipulator *m) {
 }
 
 void rotate_manipulator(struct workspace *w, struct manipulator *m, enum orientation dir) {
+	if (m->grabbed && atom_at(w, get_head_pos(m)))
+		rotate_compound(w, get_head_pos(m), m->pos, dir);
 	m->orient = rotated(m->orient, dir);
-	if(m->grabbed_atom && (m->head_state == HEAD_CLOSED))
-		rotate_compound(w, get_head_pos(m), m->pos, NZ);
 }
 
 void extend(struct workspace *w, struct manipulator *m) {
-	struct position old = get_head_pos(m);
 	struct position dp;
-	if(m->length < MANIPULATOR_MAX_LENGTH) {
+
+	SET_POS_V(dp, pos_shift(m->orient, 1));
+	if (m->length < MANIPULATOR_MAX_LENGTH) {
+		if (m->grabbed && atom_at(w, get_head_pos(m)))
+			move_compound(w, get_head_pos(m), dp);
 		m->length++;
 	}
-	POS_SUB(dp, get_head_pos(m), old);
-	if(m->grabbed_atom && (m->head_state == HEAD_CLOSED))
-		move_compound(w, get_head_pos(m), dp);
 }
 
 void retract(struct workspace *w, struct manipulator *m) {
-	struct position old = get_head_pos(m);
 	struct position dp;
-	if(m->length > MANIPULATOR_MIN_LENGTH) {
+
+	SET_POS_V(dp, pos_shift(opposite(m->orient), 1));
+	if (m->length > MANIPULATOR_MIN_LENGTH) {
+		if (m->grabbed && atom_at(w, get_head_pos(m)))
+			move_compound(w, get_head_pos(m), dp);
 		m->length--;
 	}
-	POS_SUB(dp, get_head_pos(m), old);
-	if(m->grabbed_atom && (m->head_state == HEAD_CLOSED))
-		move_compound(w, get_head_pos(m), dp);
 }
 
 // TODO prevent two heads grabbing one atom
@@ -154,38 +155,21 @@ void retract(struct workspace *w, struct manipulator *m) {
 void toggle_head(struct workspace *w, struct manipulator *m) {
 	if(m->head_state == HEAD_OPEN) {
 		m->head_state = HEAD_CLOSED;
-		m->grabbed_atom = atom_at(w, get_head_pos(m));
+		//m->grabbed_atom = atom_at(w, get_head_pos(m));
+		if (atom_at(w, get_head_pos(m)) != NULL)
+			m->grabbed = 1;
+		else if (glyph_at(w, get_head_pos(m)) != NULL)
+			if (glyph_at(w, get_head_pos(m))->op == SOURCE)
+				m->grabbed = 1;
 	} else if(m->head_state == HEAD_CLOSED) {
 		m->head_state = HEAD_OPEN;
-		m->grabbed_atom = NULL;
+		//m->grabbed_atom = NULL;
+		m->grabbed = 0;
 	}
 }
 
 struct position get_head_pos(struct manipulator *m) {
 	struct position ret;
-
-	SET_POS_V(ret, m->pos);
-	switch(m->orient) {
-	case PX:
-		ret.x += m->length;
-		break;
-	case NX:
-		ret.x -= m->length;
-		break;
-	case PY:
-		ret.y += m->length;
-		break;
-	case NY:
-		ret.y -= m->length;
-		break;
-	case PZ:
-		ret.z += m->length;
-		break;
-	case NZ:
-		ret.z -= m->length;
-		break;
-	default:
-		break;
-	}
+	POS_ADD(ret, m->pos, pos_shift(m->orient, m->length));
 	return ret;
 }

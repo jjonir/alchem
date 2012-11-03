@@ -5,17 +5,19 @@
 #include "list.h"
 #include "space.h"
 
+struct atom;
 struct workspace;
 
-typedef enum glyph_op {
+enum glyph_op {
 	BOND, UNBOND, SOURCE, TRANSMUTE
-} glyph_op_t;
+};
 
-typedef struct glyph {
-	struct position pos; // TODO might not need this
+struct glyph {
+	struct position pos;
 	enum glyph_op op;
 	uint8_t type;
-} glyph_t;
+	struct atom *a;
+};
 
 struct glyph *new_glyph(enum glyph_op op, uint8_t type, struct position pos);
 void delete_glyph(struct glyph *g);

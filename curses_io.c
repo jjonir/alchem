@@ -155,48 +155,20 @@ int8_t process_input_blocking(struct workspace *w)
 		break;
 	/* Thing Movement */
 	case 'a':
-		if ((m = manipulator_at(w, w->pos)) != NULL) {
-			if (m->pos.x > 0) {
-				w->pos.x--;
-				if (manipulator_at(w, w->pos) == NULL)
-					m->pos.x--;
-				else
-					w->pos.x++;
-			}
-		}
+		if (move_manipulator(w, w->pos, pos_add(w->pos, position(-1, 0, 0))) == 0)
+			w->pos.x--;
 		break;
 	case 'd':
-		if ((m = manipulator_at(w, w->pos)) != NULL) {
-			if (m->pos.x < w->width-1) {
-				w->pos.x++;
-				if (manipulator_at(w, w->pos) == NULL)
-					m->pos.x++;
-				else
-					w->pos.x--;
-			}
-		}
+		if (move_manipulator(w, w->pos, pos_add(w->pos, position(1, 0, 0))) == 0)
+			w->pos.x++;
 		break;
 	case 'w':
-		if ((m = manipulator_at(w, w->pos)) != NULL) {
-			if (m->pos.y > 0) {
-				w->pos.y--;
-				if (manipulator_at(w, w->pos) == NULL)
-					m->pos.y--;
-				else
-					w->pos.y++;
-			}
-		}
+		if (move_manipulator(w, w->pos, pos_add(w->pos, position(0, -1, 0))) == 0)
+			w->pos.y--;
 		break;
 	case 's':
-		if ((m = manipulator_at(w, w->pos)) != NULL) {
-			if (m->pos.y < w->height-1) {
-				w->pos.y++;
-				if (manipulator_at(w, w->pos) == NULL)
-					m->pos.y++;
-				else
-					w->pos.y--;
-			}
-		}
+		if (move_manipulator(w, w->pos, pos_add(w->pos, position(0, 1, 0))) == 0)
+			w->pos.y++;
 		break;
 	/* Manipulator Manipulation */
 	case '[':

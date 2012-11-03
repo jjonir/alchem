@@ -8,13 +8,13 @@ struct atom;
 struct manipulator;
 struct glyph;
 
-typedef struct workspace {
+struct workspace {
 	uint16_t width;
 	uint16_t height;
 	uint16_t depth;
 	struct item *items;
-	position_t pos;
-} workspace_t;
+	struct position pos;
+};
 
 enum item_type {
 	ITEM_NONE = 0,
@@ -36,14 +36,15 @@ struct item {
 };
 
 struct workspace *new_workspace(uint16_t width, uint16_t height, uint16_t depth);
-void add_atom(struct workspace *w, struct atom *a, struct position pos);
-void add_manipulator(struct workspace *w, struct manipulator *m, struct position pos);
-void add_glyph(struct workspace *w, struct glyph *g, struct position pos);
+int add_atom(struct workspace *w, struct atom *a, struct position pos);
+int add_manipulator(struct workspace *w, struct manipulator *m, struct position pos);
+int add_glyph(struct workspace *w, struct glyph *g, struct position pos);
 struct atom *remove_atom(struct workspace *w, struct position pos);
 struct manipulator *remove_manipulator(struct workspace *w, struct position pos);
 struct glyph *remove_glyph(struct workspace *w, struct position pos);
 struct atom *atom_at(struct workspace *w, struct position pos);
 struct manipulator *manipulator_at(struct workspace *w, struct position pos);
 struct glyph *glyph_at(struct workspace *w, struct position pos);
+int move_manipulator(struct workspace *w, struct position from, struct position to);
 
 #endif

@@ -5,6 +5,6 @@
 
 void init_io(void);
 void end_io(void);
-void edit_workspace_loop(workspace_t *w);
+void edit_workspace_loop(struct workspace *w);
 
 #endif

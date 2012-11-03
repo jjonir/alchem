@@ -59,7 +59,7 @@ void remove_bond(struct workspace *w, struct position pos1, enum orientation o)
 
 void rotate_compound(struct workspace *w, struct position c, struct position pivot, enum orientation dir)
 {
-	atom_t *a;
+	struct atom *a;
 	LIST_HEAD(to_rotate);
 
 	build_compound(w, c, &to_rotate);
@@ -75,7 +75,7 @@ void rotate_compound(struct workspace *w, struct position c, struct position piv
 
 void move_compound(struct workspace *w, struct position c, struct position dp)
 {
-	atom_t *a;
+	struct atom *a;
 	LIST_HEAD(to_move);
 
 	build_compound(w, c, &to_move);
