@@ -1,3 +1,4 @@
+#include "alchem.h"
 #include "atom.h"
 #include "workspace.h"
 #include <stdlib.h>
@@ -10,7 +11,7 @@ const char *element_string_table[] = {
 
 void rotate_atom(struct atom *a, struct position pivot, enum orientation dir);
 void move_atom(struct atom *a, struct position dp);
-uint8_t in_compound(struct atom *find, struct list_head *l);
+int in_compound(struct atom *find, struct list_head *l);
 void build_compound(struct workspace *w, struct position pos, struct list_head *l);
 
 struct atom *new_atom(enum element e, struct position pos)
@@ -78,7 +79,13 @@ void move_compound(struct workspace *w, struct position c, struct position dp)
 	struct atom *a;
 	LIST_HEAD(to_move);
 
+#ifdef ENABLE_LOG
+	logf("\t\tmoving compound from %i,%i,%i by %i,%i,%i\n", c.x,c.y,c.z, dp.x,dp.y,dp.z);
+#endif
 	build_compound(w, c, &to_move);
+#ifdef ENABLE_LOG
+	log("\t\tbuild compound\n");
+#endif
 	list_for_each_entry(a, &to_move, compound) {
 		remove_atom(w, a->pos);
 		move_atom(a, dp);
@@ -121,7 +128,7 @@ void move_atom(struct atom *a, struct position dp)
 	POS_ADD(a->pos, a->pos, dp);
 }
 
-uint8_t in_compound(struct atom *find, struct list_head *l)
+int in_compound(struct atom *find, struct list_head *l)
 {
 	struct atom *a;
 

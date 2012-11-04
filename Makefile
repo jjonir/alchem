@@ -1,8 +1,13 @@
 CC = gcc
-CFLAGS = -Wall -Wextra
+WARNINGS = -Wall -Wextra -Wsign-conversion
+ifeq ($(LOG), true)
+CFLAGS = $(WARNINGS) -DENABLE_LOG
+else
+CFLAGS = $(WARNINGS)
+endif
 RM = rm -f
 
-ENV ?= mingw
+ENV ?= linux
 
 ifeq ($(ENV), mingw)
 CURSES = -lpdcurses

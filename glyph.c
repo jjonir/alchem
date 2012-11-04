@@ -1,9 +1,14 @@
+#include "alchem.h"
 #include "atom.h"
 #include "glyph.h"
 #include "workspace.h"
 #include <stdlib.h>
 
-struct glyph *new_glyph(enum glyph_op op, uint8_t type, struct position pos)
+const char *glyph_string_table[] = {
+	"BOND", "UNBOND", "SOURCE", "TRANSMUTE"
+};
+
+struct glyph *new_glyph(enum glyph_op op, int type, struct position pos)
 {
 	struct glyph *g;
 
@@ -23,6 +28,10 @@ void delete_glyph(struct glyph *g)
 
 void act(struct workspace *w, struct glyph *g)
 {
+#ifdef ENABLE_LOG
+	logf("acting with glyph %li\n", (long)g);
+	logf("\toperation %s\n", glyph_string_table[g->op]);
+#endif
 	switch(g->op) {
 	case BOND:
 		add_bond(w, g->pos, (enum orientation)g->type);

@@ -1,13 +1,15 @@
 #include <GL/glut.h>
 #include <GL/gl.h>
 #include <time.h>
-#include <stdint.h>
 #include <math.h>
 #include "io.h"
+#include "alchem.h"
 #include "atom.h"
 #include "glyph.h"
 #include "manipulator.h"
 #include "workspace.h"
+
+#define SIMULATION_STEP_TIME 100
 
 static struct workspace *w_io;
 static int running = 0;
@@ -67,7 +69,7 @@ void display(void) {
 
 	draw_grid();
 
-	for_each_position(pos, w->width, w->height, w->depth) {
+	for_each_position(pos, w->size.x, w->size.y, w->size.z) {
 		if ((a = atom_at(w, pos)) != NULL)
 			draw_atom(a);
 		if ((g = glyph_at(w, pos)) != NULL)
@@ -113,12 +115,12 @@ void keyboard(unsigned char key, int x, int y) {
 		if (running) {
 			running = 0;
 		} else {
-			for_each_position(pos, w_io->width, w_io->height, w_io->depth) {
+			for_each_position(pos, w_io->size.x, w_io->size.y, w_io->size.z) {
 				if ((m = manipulator_at(w_io, pos)) != NULL)
 					m->pc = list_entry(m->inst_list.next, struct inst, list);
 			}
 			running = 1;
-			glutTimerFunc(0, animate, 0);
+			glutTimerFunc(SIMULATION_STEP_TIME, animate, 0);
 		}
 	}
 }
@@ -195,7 +197,7 @@ void draw_atom(struct atom *a) {
 void draw_grid(void) {
 	struct position pos;
 
-	for_each_position(pos, w_io->width, w_io->height, w_io->depth) {
+	for_each_position(pos, w_io->size.x, w_io->size.y, w_io->size.z) {
 		glPushMatrix();
 		glTranslatef(pos.x, -pos.y, pos.z);
 		glColor3f(0.0, 0.0, 1.0);
@@ -210,14 +212,20 @@ void animate(int val) {
 	struct glyph *g;
 	struct position pos;
 
-	for_each_position(pos, w_io->width, w_io->height, w_io->depth) {
+#ifdef ENABLE_LOG
+	log("\nStarting glut_io action step\n");
+#endif
+
+	for_each_position(pos, w_io->size.x, w_io->size.y, w_io->size.z) {
 		if ((g = glyph_at(w_io, pos)) != NULL)
 			act(w_io, g);
+	}
+	for_each_position(pos, w_io->size.x, w_io->size.y, w_io->size.z) {
 		if ((m = manipulator_at(w_io, pos)) != NULL)
 			step(w_io, m);
 	}
 
 	glutPostRedisplay();
 	if (running)
-		glutTimerFunc(500, animate, 0);
+		glutTimerFunc(SIMULATION_STEP_TIME, animate, 0);
 }

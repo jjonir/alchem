@@ -1,7 +1,6 @@
 #ifndef _ATOM_H
 #define _ATOM_H
 
-#include <stdint.h>
 #include "space.h"
 #include "list.h"
 
@@ -14,7 +13,7 @@ enum element {
 
 struct atom {
 	struct list_head compound;
-	uint8_t bonds[ORIENTATION_NUM];
+	int bonds[ORIENTATION_NUM];
 	struct position pos;
 	enum element element;
 };

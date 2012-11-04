@@ -1,8 +1,8 @@
+#include "alchem.h"
 #include "atom.h"
 #include "glyph.h"
 #include "manipulator.h"
 #include "workspace.h"
-#include <stdint.h>
 #include <stdlib.h>
 
 const char *op_string_table[] = {
@@ -10,7 +10,7 @@ const char *op_string_table[] = {
 	"EXTEND", "RETRACT", "OPEN_HEAD", "CLOSE_HEAD", "NOP"
 };
 
-struct manipulator *new_manipulator(enum orientation orient, uint8_t length, struct position pos) {
+struct manipulator *new_manipulator(enum orientation orient, int length, struct position pos) {
 	struct manipulator *m;
 
 	m = (struct manipulator *)malloc(sizeof(struct manipulator));
@@ -75,6 +75,14 @@ const char *op_string(enum op op) {
 }
 
 void step(struct workspace *w, struct manipulator *m) {
+#ifdef ENABLE_LOG
+	logf("stepping with manipulator %li\n", (long)m);
+	if (m->grabbed)
+		logf("\tgrabbed %li before step\n", (long)atom_at(w, get_head_pos(m)));
+	else
+		log("\tnothing grabbed before step\n");
+	logf("\toperation %s\n", op_string_table[m->pc->op]);
+#endif
 	if(!list_empty(&m->inst_list)) {
 		switch(m->pc->op) {
 		case ROT_PX:
@@ -119,6 +127,13 @@ void step(struct workspace *w, struct manipulator *m) {
 		else
 			m->pc = list_entry(m->pc->list.next, struct inst, list);
 	}
+
+#ifdef ENABLE_LOG
+	if (m->grabbed)
+		logf("\tgrabbed %li after step\n", (long)atom_at(w, get_head_pos(m)));
+	else
+		log("\tnothing grabbed after step\n");
+#endif
 }
 
 void rotate_manipulator(struct workspace *w, struct manipulator *m, enum orientation dir) {

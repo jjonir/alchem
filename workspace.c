@@ -1,24 +1,24 @@
-#include "workspace.h"
+#include "alchem.h"
 #include "atom.h"
 #include "glyph.h"
 #include "manipulator.h"
+#include "workspace.h"
 #include <stdlib.h>
-#include <stdint.h>
 
 static struct item *item_at(struct workspace *w, struct position pos);
 static int add_item(struct workspace *w, void *item, struct position pos, enum item_type t);
 static void *remove_item(struct workspace *w, struct position pos, enum item_type t);
 
-struct workspace *new_workspace(uint16_t width, uint16_t height, uint16_t depth)
+struct workspace *new_workspace(int width, int height, int depth)
 {
 	struct workspace *w;
-	uint64_t size;
+	size_t size;
 
 	w = (struct workspace *)malloc(sizeof(struct workspace));
-	w->width = width;
-	w->height = height;
-	w->depth = depth;
-	size = width * height * depth;
+	w->size.x = width;
+	w->size.y = height;
+	w->size.z = depth;
+	size = (size_t)(width * height * depth);
 	w->items = (struct item *)calloc(size, sizeof(struct item));
 	SET_POS(w->pos, 0, 0, 0);
 
@@ -27,9 +27,9 @@ struct workspace *new_workspace(uint16_t width, uint16_t height, uint16_t depth)
 
 struct item *item_at(struct workspace *w, struct position pos)
 {
-	uint64_t index;
+	int index;
 
-	index = pos.x + w->width * (pos.y + w->height * pos.z);
+	index = pos.x + w->size.x * (pos.y + w->size.y * pos.z);
 	return &w->items[index];
 }
 

@@ -1,6 +1,5 @@
 #include <curses.h>
 #include <time.h>
-#include <stdint.h>
 #include "io.h"
 #include "atom.h"
 #include "glyph.h"
@@ -11,14 +10,14 @@ int foo = 0;
 
 /* Local Function Prototypes */
 void display(struct workspace *w);
-int8_t process_input_blocking(struct workspace *w);
+int process_input_blocking(struct workspace *w);
 void run(struct workspace *w);
-enum op pick_op(uint8_t x);
-enum element pick_element(uint8_t x);
+enum op pick_op(int x);
+enum element pick_element(int x);
 void draw_bond(struct position p1, struct position p2);
 void draw_atom(struct atom *a);
 void draw_manipulator(struct manipulator *m);
-void print_inst_list(struct manipulator *m, uint8_t x);
+void print_inst_list(struct manipulator *m, int x);
 void draw_glyph(struct glyph *g);
 
 /* External Interface Functions */
@@ -38,7 +37,7 @@ void end_io(void)
 
 void edit_workspace_loop(struct workspace *w)
 {
-	int8_t cmd;
+	int cmd;
 	do {
 		display(w);
 		cmd = process_input_blocking(w);
@@ -55,7 +54,7 @@ void display(struct workspace *w)
 
 	clear();
 
-	for_each_position(pos, w->width, w->height, 1) {
+	for_each_position(pos, w->size.x, w->size.y, 1) {
 		if (POS_EQ(pos, w->pos))
 			attron(A_STANDOUT);
 
@@ -75,7 +74,7 @@ void display(struct workspace *w)
 
 	/* Redraw the selected manipulator to be sure it's on top */
 	if ((m = manipulator_at(w, w->pos)) != NULL) {
-		print_inst_list(m, 4 * w->width + 1);
+		print_inst_list(m, 4 * w->size.x + 1);
 		attron(A_STANDOUT);
 		draw_manipulator(m);
 		attroff(A_STANDOUT);
@@ -85,7 +84,7 @@ void display(struct workspace *w)
 }
 
 // TODO document input commands; both in README.md and in a case 'h' or case '?'
-int8_t process_input_blocking(struct workspace *w)
+int process_input_blocking(struct workspace *w)
 {
 	struct manipulator *m;
 	struct glyph *g;
@@ -102,7 +101,7 @@ int8_t process_input_blocking(struct workspace *w)
 			w->pos.x--;
 		break;
 	case KEY_RIGHT:
-		if (w->pos.x < w->width-1)
+		if (w->pos.x < w->size.x-1)
 			w->pos.x++;
 		break;
 	case KEY_UP:
@@ -110,7 +109,7 @@ int8_t process_input_blocking(struct workspace *w)
 			w->pos.y--;
 		break;
 	case KEY_DOWN:
-		if (w->pos.y < w->height-1)
+		if (w->pos.y < w->size.y-1)
 			w->pos.y++;
 		break;
 	/* Thing Placement and Removal */
@@ -125,7 +124,7 @@ int8_t process_input_blocking(struct workspace *w)
 	case 'b':
 //TODO
 		if ((g == NULL) && (m == NULL)) {
-			g = new_glyph(BOND, (uint8_t)PX, w->pos);
+			g = new_glyph(BOND, (int)PX, w->pos);
 			add_glyph(w, g, w->pos);
 		}
 		break;
@@ -137,7 +136,7 @@ int8_t process_input_blocking(struct workspace *w)
 	case 'u':
 //TODO
 		if ((g == NULL) && (m == NULL)) {
-			g = new_glyph(UNBOND, (uint8_t)PX, w->pos);
+			g = new_glyph(UNBOND, (int)PX, w->pos);
 			add_glyph(w, g, w->pos);
 		}
 		break;
@@ -149,7 +148,7 @@ int8_t process_input_blocking(struct workspace *w)
 	case 'j': //j for jar? or something
 //TODO
 		if ((g == NULL) && (m == NULL)) {
-			g = new_glyph(SOURCE, (uint8_t)pick_element(4 * w->width + 1), w->pos);
+			g = new_glyph(SOURCE, (int)pick_element(4 * w->size.x + 1), w->pos);
 			add_glyph(w, g, w->pos);
 		}
 		break;
@@ -196,12 +195,12 @@ int8_t process_input_blocking(struct workspace *w)
 	/* Instruction Manipulation */
 	case 'i':
 		if ((m = manipulator_at(w, w->pos)) != NULL) {
-			inst_add(m, pick_op(4 * w->width + 10));
+			inst_add(m, pick_op(4 * w->size.x + 10));
 		}
 		break;
 	case 'I':
 		if ((m = manipulator_at(w, w->pos)) != NULL) {
-			inst_add_prev(m, pick_op(4 * w->width + 10));
+			inst_add_prev(m, pick_op(4 * w->size.x + 10));
 		}
 		break;
 	case 'y':
@@ -225,7 +224,7 @@ int8_t process_input_blocking(struct workspace *w)
 		break;
 	/* Execution */
 	case 'x':
-		for_each_position(pos, w->width, w->height, w->depth) {
+		for_each_position(pos, w->size.x, w->size.y, w->size.z) {
 			if ((m = manipulator_at(w, pos)) != NULL)
 				step(w, m);
 		}
@@ -234,7 +233,7 @@ int8_t process_input_blocking(struct workspace *w)
 		run(w);
 		break;
 	case 'g':
-		for_each_position(pos, w->width, w->height, w->depth) {
+		for_each_position(pos, w->size.x, w->size.y, w->size.z) {
 			if ((g = glyph_at(w, pos)) != NULL)
 				act(w, g);
 		}
@@ -259,7 +258,7 @@ void run(struct workspace *w) {
 
 	t = clock() + (CLOCKS_PER_SEC / 2);
 	timeout(0);
-	for_each_position(pos, w->width, w->height, w->depth) {
+	for_each_position(pos, w->size.x, w->size.y, w->size.z) {
 		if ((m = manipulator_at(w, pos)) != NULL)
 			m->pc = list_entry(m->inst_list.next, struct inst, list);
 	}
@@ -268,11 +267,11 @@ void run(struct workspace *w) {
 	do {
 		cmd = getch();
 		if (clock() > t ) {
-			for_each_position(pos, w->width, w->height, w->depth) {
+			for_each_position(pos, w->size.x, w->size.y, w->size.z) {
 				if ((g = glyph_at(w, pos)) != NULL)
 					act(w, g);
 			}
-			for_each_position(pos, w->width, w->height, w->depth) {
+			for_each_position(pos, w->size.x, w->size.y, w->size.z) {
 				if ((m = manipulator_at(w, pos)) != NULL)
 					step(w, m);
 			}
@@ -284,7 +283,7 @@ void run(struct workspace *w) {
 	timeout(-1);
 }
 
-enum op pick_op(uint8_t x) {
+enum op pick_op(int x) {
 	enum op op = 0;
 	int cmd;
 	enum op y;
@@ -294,7 +293,7 @@ enum op pick_op(uint8_t x) {
 		for (y = 0; y <= NOP; y++) {
 			if (y == op)
 				attron(A_STANDOUT);
-			mvprintw(2+y, x, op_string(y));
+			mvprintw(2+(int)y, x, op_string(y));
 			if (y == op)
 				attroff(A_STANDOUT);
 		}
@@ -307,7 +306,7 @@ enum op pick_op(uint8_t x) {
 	return op;
 }
 
-enum element pick_element(uint8_t x) {
+enum element pick_element(int x) {
 	enum element element = ATOM_H;
 	int cmd;
 	enum element y;
@@ -317,7 +316,7 @@ enum element pick_element(uint8_t x) {
 		for (y = 0; y < ATOM_END; y++) {
 			if (y == element)
 				attron(A_STANDOUT);
-			mvprintw(2+y, x, element_string(y));
+			mvprintw(2+(int)y, x, element_string(y));
 			if (y == element)
 				attroff(A_STANDOUT);
 		}
@@ -366,10 +365,10 @@ void draw_atom(struct atom *a)
 
 void draw_manipulator(struct manipulator *m)
 {
-	int8_t dx=0, dy=0;
-	uint8_t head_x, head_y;
-	uint8_t x = m->pos.x;
-	uint8_t y = m->pos.y;
+	int dx=0, dy=0;
+	int head_x, head_y;
+	int x = m->pos.x;
+	int y = m->pos.y;
 
 	/* Draw the base */
 	mvaddstr(3*y,   4*x, "/--\\");
@@ -463,7 +462,7 @@ void draw_manipulator(struct manipulator *m)
 	}
 }
 
-void print_inst_list(struct manipulator *m, uint8_t x)
+void print_inst_list(struct manipulator *m, int x)
 {
 	struct inst *i;
 	int y=0;

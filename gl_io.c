@@ -1,6 +1,5 @@
 #include <GL/gl.h>
 #include <time.h>
-#include <stdint.h>
 #include "io.h"
 #include "workspace.h"
 

@@ -1,10 +1,8 @@
 #ifndef _SPACE_H
 #define _SPACE_H
 
-#include <stdint.h>
-
 struct position {
-	uint8_t x, y, z;
+	int x, y, z;
 };
 
 enum orientation {
@@ -43,7 +41,7 @@ enum orientation {
 	LV.z = P1.z + P2.z; \
 } while (0)
 
-static inline struct position position(uint8_t x, uint8_t y, uint8_t z)
+static inline struct position position(int x, int y, int z)
 {
 	struct position rv;
 	rv.x = x; rv.y = y; rv.z = z;
@@ -67,7 +65,7 @@ static inline int adjacent(struct position p1, struct position p2)
 		((p1.x != p2.x) && (p1.y == p2.y) && (p1.z == p2.z)));
 }
 
-static inline struct position pos_shift(enum orientation o, uint8_t dist)
+static inline struct position pos_shift(enum orientation o, int dist)
 {
 	struct position dp = {0, 0, 0};
 	switch (o) {

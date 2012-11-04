@@ -1,16 +1,26 @@
 #include <stdlib.h>
 #include <string.h>
-#include <stdint.h>
 #include "io.h"
+#include "alchem.h"
 #include "atom.h"
 #include "glyph.h"
 #include "manipulator.h"
 #include "workspace.h"
 
+#ifdef ENABLE_LOG
+FILE *logfile;
+#endif
+
 int main() {
 	struct workspace *w;
 	struct manipulator *m;
 	struct glyph *g;
+
+#ifdef ENABLE_LOG
+	logfile = fopen("log", "a");
+	fprintf(logfile, "--------------------\n");
+	fprintf(logfile, "Starting Alchem\n\n");
+#endif
 
 	init_io();
 
@@ -38,9 +48,9 @@ int main() {
 	add_manipulator(w, new_manipulator(PZ, 4, 2, 0, 0));
 	add_manipulator(w, new_manipulator(NZ, 4, 3, 0, 0));
 */
-	g = new_glyph(SOURCE, (uint8_t)ATOM_AL, position(3, 0, 0));
+	g = new_glyph(SOURCE, (int)ATOM_AL, position(3, 0, 0));
 	add_glyph(w, g, position(3, 0, 0));
-	g = new_glyph(BOND, (uint8_t)PX, position(1, 2, 0));
+	g = new_glyph(BOND, (int)PX, position(1, 2, 0));
 	add_glyph(w, g, position(1, 2, 0));
 
 	edit_workspace_loop(w);

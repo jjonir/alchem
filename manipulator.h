@@ -1,7 +1,6 @@
 #ifndef _MANIPULATOR_H
 #define _MANIPULATOR_H
 
-#include <stdint.h>
 #include "space.h"
 #include "list.h"
 
@@ -28,14 +27,14 @@ struct inst {
 struct manipulator {
 	struct position pos;
 	enum orientation orient;
-	uint8_t length;
+	int length;
 	enum head_state head_state;
-	uint8_t grabbed;
+	int grabbed;
 	struct list_head inst_list;
 	struct inst *pc;
 };
 
-struct manipulator *new_manipulator(enum orientation orient, uint8_t length, struct position pos);
+struct manipulator *new_manipulator(enum orientation orient, int length, struct position pos);
 void delete_manipulator(struct manipulator *m);
 void inst_add(struct manipulator *m, enum op op);
 void inst_add_prev(struct manipulator *m, enum op op);
