@@ -14,32 +14,8 @@ enum orientation {
 		for (P.y = 0; P.y < Y; P.y++) \
 			for (P.x = 0; P.x < X; P.x++)
 
-#define SET_POS(P, X, Y, Z) do { \
-	P.x = X; \
-	P.y = Y; \
-	P.z = Z; \
-} while (0)
-
-#define SET_POS_V(TO, FROM) do { \
-	TO.x = FROM.x; \
-	TO.y = FROM.y; \
-	TO.z = FROM.z; \
-} while (0)
-
 #define POS_EQ(P1, P2) \
 	((P1.x == P2.x) && (P1.y == P2.y) && (P1.z == P2.z))
-
-#define POS_SUB(LV, P1, P2) do { \
-	LV.x = P1.x - P2.x; \
-	LV.y = P1.y - P2.y; \
-	LV.z = P1.z - P2.z; \
-} while (0)
-
-#define POS_ADD(LV, P1, P2) do { \
-	LV.x = P1.x + P2.x; \
-	LV.y = P1.y + P2.y; \
-	LV.z = P1.z + P2.z; \
-} while (0)
 
 static inline struct position position(int x, int y, int z)
 {
@@ -54,6 +30,16 @@ static inline struct position pos_add(struct position a, struct position b)
 		a.x + b.x,
 		a.y + b.y,
 		a.z + b.z
+	};
+	return p;
+}
+
+static inline struct position pos_sub(struct position a, struct position b)
+{
+	struct position p = {
+		a.x - b.x,
+		a.y - b.y,
+		a.z - b.z
 	};
 	return p;
 }

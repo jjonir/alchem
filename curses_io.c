@@ -357,7 +357,7 @@ void draw_atom(struct atom *a)
 
 	for (dir = 0; dir < ORIENTATION_NUM; dir++) {
 		if (a->bonds[dir] > 0) {
-			POS_ADD(adj, a->pos, pos_shift(dir, 1));
+			adj = pos_add(a->pos, pos_shift(dir, 1));
 			draw_bond(a->pos, adj);
 		}
 	}
@@ -484,12 +484,12 @@ void draw_glyph(struct glyph *g)
 	switch(g->op) {
 	case BOND:
 		mvaddch(3*g->pos.y+2, 4*g->pos.x+3, '+');
-		POS_ADD(adj, g->pos, pos_shift((enum orientation)g->type, 1));
+		adj = pos_add(g->pos, pos_shift((enum orientation)g->type, 1));
 		mvaddch(3*adj.y+2, 4*adj.x+3, '+');
 		break;
 	case UNBOND:
 		mvaddch(3*g->pos.y+2, 4*g->pos.x+3, '-');
-		POS_ADD(adj, g->pos, pos_shift((enum orientation)g->type, 1));
+		adj = pos_add(g->pos, pos_shift((enum orientation)g->type, 1));
 		mvaddch(3*adj.y+2, 4*adj.x+3, '-');
 		break;
 	case SOURCE:

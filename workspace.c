@@ -20,7 +20,7 @@ struct workspace *new_workspace(int width, int height, int depth)
 	w->size.z = depth;
 	size = (size_t)(width * height * depth);
 	w->items = (struct item *)calloc(size, sizeof(struct item));
-	SET_POS(w->pos, 0, 0, 0);
+	w->pos = position(0, 0, 0);
 
 	return w;
 }

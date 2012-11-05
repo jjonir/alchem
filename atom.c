@@ -20,7 +20,7 @@ struct atom *new_atom(enum element e, struct position pos)
 
 	a = (struct atom *)malloc(sizeof(struct atom));
 	memset(a->bonds, 0, ORIENTATION_NUM);
-	SET_POS(a->pos, pos.x, pos.y, pos.z);
+	a->pos = pos;
 	a->element = e;
 
 	return a;
@@ -31,7 +31,7 @@ void add_bond(struct workspace *w, struct position pos1, enum orientation o)
 	struct position pos2;
 	struct atom *a1, *a2;
 
-	POS_ADD(pos2, pos1, pos_shift(o, 1));
+	pos2 = pos_add(pos1, pos_shift(o, 1));
 
 	a1 = atom_at(w, pos1);
 	a2 = atom_at(w, pos2);
@@ -47,7 +47,7 @@ void remove_bond(struct workspace *w, struct position pos1, enum orientation o)
 	struct position pos2;
 	struct atom *a1, *a2;
 
-	POS_ADD(pos2, pos1, pos_shift(o, 1));
+	pos2 = pos_add(pos1, pos_shift(o, 1));
 
 	a1 = atom_at(w, pos1);
 	a2 = atom_at(w, pos2);
@@ -105,7 +105,7 @@ const char *element_string(enum element e)
 void rotate_atom(struct atom *a, struct position pivot, enum orientation dir)
 {
 	struct position dp;
-	POS_SUB(dp, a->pos, pivot);
+	dp = pos_sub(a->pos, pivot);
 
 	switch(dir) {
 	//TODO other rotation directions
@@ -125,7 +125,7 @@ void rotate_atom(struct atom *a, struct position pivot, enum orientation dir)
 
 void move_atom(struct atom *a, struct position dp)
 {
-	POS_ADD(a->pos, a->pos, dp);
+	a->pos = pos_add(a->pos, dp);
 }
 
 int in_compound(struct atom *find, struct list_head *l)
@@ -152,7 +152,7 @@ void build_compound(struct workspace *w, struct position pos, struct list_head *
 		list_add(&a->compound, l);
 		for (dir = 0; dir < ORIENTATION_NUM; dir++) {
 			if (a->bonds[dir] > 0) {
-				POS_ADD(adj, pos, pos_shift(dir, 1));
+				adj = pos_add(pos, pos_shift(dir, 1));
 				build_compound(w, adj, l);
 			}
 		}

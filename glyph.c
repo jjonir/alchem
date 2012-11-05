@@ -13,7 +13,7 @@ struct glyph *new_glyph(enum glyph_op op, int type, struct position pos)
 	struct glyph *g;
 
 	g = (struct glyph *)malloc(sizeof(struct glyph));
-	SET_POS(g->pos, pos.x, pos.y, pos.z);
+	g->pos = pos;
 	g->op = op;
 	g->type = type;
 	g->a = NULL;

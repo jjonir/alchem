@@ -14,7 +14,7 @@ struct manipulator *new_manipulator(enum orientation orient, int length, struct 
 	struct manipulator *m;
 
 	m = (struct manipulator *)malloc(sizeof(struct manipulator));
-	SET_POS_V(m->pos, pos);
+	m->pos = pos;
 	m->orient = orient;
 	m->length = length;
 	m->head_state = HEAD_OPEN;
@@ -145,7 +145,7 @@ void rotate_manipulator(struct workspace *w, struct manipulator *m, enum orienta
 void extend(struct workspace *w, struct manipulator *m) {
 	struct position dp;
 
-	SET_POS_V(dp, pos_shift(m->orient, 1));
+	dp = pos_shift(m->orient, 1);
 	if (m->length < MANIPULATOR_MAX_LENGTH) {
 		if (m->grabbed && atom_at(w, get_head_pos(m)))
 			move_compound(w, get_head_pos(m), dp);
@@ -156,7 +156,7 @@ void extend(struct workspace *w, struct manipulator *m) {
 void retract(struct workspace *w, struct manipulator *m) {
 	struct position dp;
 
-	SET_POS_V(dp, pos_shift(opposite(m->orient), 1));
+	dp = pos_shift(m->orient, -1);
 	if (m->length > MANIPULATOR_MIN_LENGTH) {
 		if (m->grabbed && atom_at(w, get_head_pos(m)))
 			move_compound(w, get_head_pos(m), dp);
@@ -185,6 +185,6 @@ void toggle_head(struct workspace *w, struct manipulator *m) {
 
 struct position get_head_pos(struct manipulator *m) {
 	struct position ret;
-	POS_ADD(ret, m->pos, pos_shift(m->orient, m->length));
+	ret = pos_add(m->pos, pos_shift(m->orient, m->length));
 	return ret;
 }
