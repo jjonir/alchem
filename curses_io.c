@@ -250,31 +250,18 @@ int process_input_blocking(struct workspace *w)
 }
 
 void run(struct workspace *w) {
-	struct manipulator *m;
-	struct glyph *g;
-	struct position pos;
 	int cmd;
 	clock_t t;
 
 	t = clock() + (CLOCKS_PER_SEC / 2);
 	timeout(0);
-	for_each_position(pos, w->size.x, w->size.y, w->size.z) {
-		if ((m = manipulator_at(w, pos)) != NULL)
-			m->pc = list_entry(m->inst_list.next, struct inst, list);
-	}
+	sim_start(w);
 	display(w);
 
 	do {
 		cmd = getch();
 		if (clock() > t ) {
-			for_each_position(pos, w->size.x, w->size.y, w->size.z) {
-				if ((g = glyph_at(w, pos)) != NULL)
-					act(w, g);
-			}
-			for_each_position(pos, w->size.x, w->size.y, w->size.z) {
-				if ((m = manipulator_at(w, pos)) != NULL)
-					step(w, m);
-			}
+			sim_step(w);
 			display(w);
 			t += (CLOCKS_PER_SEC / 2);
 		}

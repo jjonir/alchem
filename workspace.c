@@ -25,6 +25,37 @@ struct workspace *new_workspace(int width, int height, int depth)
 	return w;
 }
 
+void sim_start(struct workspace *w)
+{
+	struct position pos;
+	struct manipulator *m;
+
+	for_each_position(pos, w->size.x, w->size.y, w->size.z) {
+		if ((m = manipulator_at(w, pos)) != NULL)
+			m->pc = list_entry(m->inst_list.next, struct inst, list);
+	}
+}
+
+void sim_step(struct workspace *w)
+{
+	struct position pos;
+	struct manipulator *m;
+	struct glyph *g;
+
+	for_each_position(pos, w->size.x, w->size.y, w->size.z) {
+		if ((g = glyph_at(w, pos)) != NULL)
+			act(w, g);
+	}
+	for_each_position(pos, w->size.x, w->size.y, w->size.z) {
+		if ((m = manipulator_at(w, pos)) != NULL)
+			step(w, m);
+	}
+}
+
+void sim_stop(struct workspace *w)
+{
+}
+
 struct item *item_at(struct workspace *w, struct position pos)
 {
 	int index;

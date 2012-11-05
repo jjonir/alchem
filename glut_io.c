@@ -18,12 +18,17 @@ static int running = 0;
 void display(void);
 void reshape(int w, int h);
 void keyboard(unsigned char key, int x, int y);
-void animate(int val);
+void mouse(int button, int state, int x, int y);
+void motion(int x, int y);
 
-void draw_grid(void);
 void draw_manipulator(struct manipulator *m);
 void draw_glyph(struct glyph *g);
 void draw_atom(struct atom *a);
+void draw_grid(void);
+
+void glut_sim_start(void);
+void glut_sim_step(int val);
+void glut_sim_stop(void);
 
 /* External Interface Functions */
 void init_io(void) {
@@ -46,11 +51,13 @@ void edit_workspace_loop(struct workspace *w) {
 
 	glutDisplayFunc(display);
 	glutReshapeFunc(reshape);
+
 	glutKeyboardFunc(keyboard);
 	//glutSpecialFunc(special);
-	//glutMouseFunc(mouse);
+	glutMouseFunc(mouse);
+	glutMotionFunc(motion);
+
 	//glutFullScreen();
-	//TODO initialize scenegraph based on w?
 	glutMainLoop();
 }
 
@@ -81,8 +88,6 @@ void display(void) {
 	}
 
 	glutSwapBuffers();
-
-	glutPostRedisplay();
 }
 
 void reshape(int w, int h) {
@@ -99,30 +104,29 @@ void reshape(int w, int h) {
 	glLoadIdentity();
 	glViewport(0, 0, dim, dim);
 	//gluPerspective(45, ratio, 0.1, 100000.0);
-	glOrtho(-2, 8, -8, 2, -10, 10);
+	glOrtho(-2, w_io->size.x + 2, -(w_io->size.y + 2), 2, -10, 10);
 	glMatrixMode(GL_MODELVIEW);
 }
 
 void keyboard(unsigned char key, int x, int y) {
 	(void)x;
 	(void)y;
-	struct manipulator *m;
-	struct position pos;
 
 	if (key == 0x1B)
 		exit(0);
 	if (key == 'X') {
 		if (running) {
-			running = 0;
+			glut_sim_stop();
 		} else {
-			for_each_position(pos, w_io->size.x, w_io->size.y, w_io->size.z) {
-				if ((m = manipulator_at(w_io, pos)) != NULL)
-					m->pc = list_entry(m->inst_list.next, struct inst, list);
-			}
-			running = 1;
-			glutTimerFunc(SIMULATION_STEP_TIME, animate, 0);
+			glut_sim_start();
 		}
 	}
+}
+
+void mouse(int button, int state, int x, int y) {
+}
+
+void motion(int x, int y) {
 }
 
 void draw_manipulator(struct manipulator *m) {
@@ -206,26 +210,27 @@ void draw_grid(void) {
 	}
 }
 
-void animate(int val) {
+void glut_sim_start() {
+	sim_start(w_io);
+	running = 1;
+	glutTimerFunc(SIMULATION_STEP_TIME, glut_sim_step, 0);
+}
+
+void glut_sim_step(int val) {
 	(void)val;
-	struct manipulator *m;
-	struct glyph *g;
-	struct position pos;
 
 #ifdef ENABLE_LOG
 	log("\nStarting glut_io action step\n");
 #endif
 
-	for_each_position(pos, w_io->size.x, w_io->size.y, w_io->size.z) {
-		if ((g = glyph_at(w_io, pos)) != NULL)
-			act(w_io, g);
-	}
-	for_each_position(pos, w_io->size.x, w_io->size.y, w_io->size.z) {
-		if ((m = manipulator_at(w_io, pos)) != NULL)
-			step(w_io, m);
-	}
+	sim_step(w_io);
 
 	glutPostRedisplay();
 	if (running)
-		glutTimerFunc(SIMULATION_STEP_TIME, animate, 0);
+		glutTimerFunc(SIMULATION_STEP_TIME, glut_sim_step, 0);
+}
+
+void glut_sim_stop() {
+	sim_stop(w_io);
+	running = 0;
 }
