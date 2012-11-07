@@ -77,11 +77,12 @@ const char *op_string(enum op op) {
 void step(struct workspace *w, struct manipulator *m) {
 #ifdef ENABLE_LOG
 	logf("stepping with manipulator %li\n", (long)m);
+	log_indent();
 	if (m->grabbed)
-		logf("\tgrabbed %li before step\n", (long)atom_at(w, get_head_pos(m)));
+		logf("grabbed %li before step\n", (long)atom_at(w, get_head_pos(m)));
 	else
-		log("\tnothing grabbed before step\n");
-	logf("\toperation %s\n", op_string_table[m->pc->op]);
+		log("nothing grabbed before step\n");
+	logf("operation %s\n", op_string_table[m->pc->op]);
 #endif
 	if(!list_empty(&m->inst_list)) {
 		switch(m->pc->op) {
@@ -130,9 +131,10 @@ void step(struct workspace *w, struct manipulator *m) {
 
 #ifdef ENABLE_LOG
 	if (m->grabbed)
-		logf("\tgrabbed %li after step\n", (long)atom_at(w, get_head_pos(m)));
+		logf("grabbed %li after step\n", (long)atom_at(w, get_head_pos(m)));
 	else
-		log("\tnothing grabbed after step\n");
+		log("nothing grabbed after step\n");
+	log_unindent();
 #endif
 }
 

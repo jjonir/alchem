@@ -13,6 +13,11 @@
 
 static struct workspace *w_io;
 static int running = 0;
+static int prevx, prevy;
+static int rotating = 0;
+static int panning = 0;
+static float rotx = 0, roty = 0;
+static float panx = 0, pany = 0;
 
 /* Local Function Prototypes */
 void display(void);
@@ -104,7 +109,10 @@ void reshape(int w, int h) {
 	glLoadIdentity();
 	glViewport(0, 0, dim, dim);
 	//gluPerspective(45, ratio, 0.1, 100000.0);
-	glOrtho(-2, w_io->size.x + 2, -(w_io->size.y + 2), 2, -10, 10);
+	glOrtho(-2 + panx, w_io->size.x + 2 + panx,
+		-(w_io->size.y + 2 + pany), -(-2 + pany), -10, 10);
+	glRotatef(rotx, 0, 1, 0);
+	glRotatef(roty, 1, 0, 0);
 	glMatrixMode(GL_MODELVIEW);
 }
 
@@ -124,9 +132,37 @@ void keyboard(unsigned char key, int x, int y) {
 }
 
 void mouse(int button, int state, int x, int y) {
+	prevx = x;
+	prevy = y;
+	if (button == GLUT_LEFT_BUTTON) {
+		if (state == GLUT_DOWN)
+			rotating = 1;
+		else
+			rotating = 0;
+	} else if (button == GLUT_RIGHT_BUTTON) {
+		if (state == GLUT_DOWN)
+			panning = 1;
+		else
+			panning = 0;
+	}
 }
 
 void motion(int x, int y) {
+	int dx = x - prevx;
+	int dy = y - prevy;
+	prevx = x;
+	prevy = y;
+
+	if (rotating) {
+		rotx -= dx;
+		roty -= dy;
+	}
+	if (panning) {
+		panx -= ((float)dx * (4 + w_io->size.x) / glutGet(GLUT_WINDOW_WIDTH));
+		pany -= ((float)dy * (4 + w_io->size.y) / glutGet(GLUT_WINDOW_HEIGHT));
+	}
+	reshape(glutGet(GLUT_WINDOW_WIDTH), glutGet(GLUT_WINDOW_HEIGHT));
+	glutPostRedisplay();
 }
 
 void draw_manipulator(struct manipulator *m) {
@@ -220,7 +256,8 @@ void glut_sim_step(int val) {
 	(void)val;
 
 #ifdef ENABLE_LOG
-	log("\nStarting glut_io action step\n");
+	static int stepct = 0;
+	logf("\nStarting glut_io sim step %i\n", stepct++);
 #endif
 
 	sim_step(w_io);

@@ -63,6 +63,10 @@ void rotate_compound(struct workspace *w, struct position c, struct position piv
 	struct atom *a;
 	LIST_HEAD(to_rotate);
 
+#ifdef ENABLE_LOG
+	logf("rotating compound from %i,%i,%i about %i,%i,%i in direction %i\n", c.x,c.y,c.z, pivot.x,pivot.y,pivot.z, dir);
+	log_indent();
+#endif
 	build_compound(w, c, &to_rotate);
 	list_for_each_entry(a, &to_rotate, compound) {
 		remove_atom(w, a->pos);
@@ -72,6 +76,9 @@ void rotate_compound(struct workspace *w, struct position c, struct position piv
 		add_atom(w, a, a->pos);
 		//TODO check for something already there
 	}
+#ifdef ENABLE_LOG
+	log_unindent();
+#endif
 }
 
 void move_compound(struct workspace *w, struct position c, struct position dp)
@@ -80,12 +87,10 @@ void move_compound(struct workspace *w, struct position c, struct position dp)
 	LIST_HEAD(to_move);
 
 #ifdef ENABLE_LOG
-	logf("\t\tmoving compound from %i,%i,%i by %i,%i,%i\n", c.x,c.y,c.z, dp.x,dp.y,dp.z);
+	logf("moving compound from %i,%i,%i by %i,%i,%i\n", c.x,c.y,c.z, dp.x,dp.y,dp.z);
+	log_indent();
 #endif
 	build_compound(w, c, &to_move);
-#ifdef ENABLE_LOG
-	log("\t\tbuild compound\n");
-#endif
 	list_for_each_entry(a, &to_move, compound) {
 		remove_atom(w, a->pos);
 		move_atom(a, dp);
@@ -94,6 +99,9 @@ void move_compound(struct workspace *w, struct position c, struct position dp)
 		add_atom(w, a, a->pos);
 		//TODO check for something already there
 	}
+#ifdef ENABLE_LOG
+	log_unindent();
+#endif
 }
 
 const char *element_string(enum element e)
@@ -147,8 +155,15 @@ void build_compound(struct workspace *w, struct position pos, struct list_head *
 	enum orientation dir;
 	struct position adj;
 
+#ifdef ENABLE_LOG
+	log("build compound\n");
+	log_indent();
+#endif
 	a = atom_at(w, pos);
 	if ((a != NULL) && !in_compound(a, l)) {
+#ifdef ENABLE_LOG
+		logf("adding atom %li\n", (long)a);
+#endif
 		list_add(&a->compound, l);
 		for (dir = 0; dir < ORIENTATION_NUM; dir++) {
 			if (a->bonds[dir] > 0) {
@@ -157,4 +172,7 @@ void build_compound(struct workspace *w, struct position pos, struct list_head *
 			}
 		}
 	}
+#ifdef ENABLE_LOG
+	log_unindent();
+#endif
 }

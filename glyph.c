@@ -30,7 +30,8 @@ void act(struct workspace *w, struct glyph *g)
 {
 #ifdef ENABLE_LOG
 	logf("acting with glyph %li\n", (long)g);
-	logf("\toperation %s\n", glyph_string_table[g->op]);
+	log_indent();
+	logf("operation %s\n", glyph_string_table[g->op]);
 #endif
 	switch(g->op) {
 	case BOND:
@@ -48,4 +49,7 @@ void act(struct workspace *w, struct glyph *g)
 	default:
 		break;
 	}
+#ifdef ENABLE_LOG
+	log_unindent();
+#endif
 }

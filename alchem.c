@@ -9,6 +9,7 @@
 
 #ifdef ENABLE_LOG
 FILE *logfile;
+int indent_level;
 #endif
 
 int main() {
@@ -24,7 +25,7 @@ int main() {
 
 	init_io();
 
-	w = new_workspace(10, 10, 10);
+	w = new_workspace(5, 5, 5);
 
 	m = new_manipulator(PX, 2, position(1, 0, 0));
 	inst_add(m, CLOSE_HEAD);
